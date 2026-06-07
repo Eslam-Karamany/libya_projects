@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>البوابة الجغرافية v2 — جهاز تنفيذ مشروعات الإسكان والمرافق</title>
+
+<!-- Leaflet 2D -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<!-- ArcGIS Maps SDK for JavaScript (SceneView / WebScene) -->
+<link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/dark/main.css"/>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet"/>
+
+<style>
+:root{
+  --primary:#0a2d52;--primary2:#103d6e;--accent:#1e88e5;--accent2:#e65100;
+  --green:#2e7d32;--yellow:#f57f17;--red:#c62828;--purple:#6a1b9a;--teal:#00968826;
+  --bg:#f0f4f8;--card:#fff;--text:#1a1a2e;--muted:#5a6a7a;--border:#d0dce8;
+  --sidebar:320px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+/* ── HEADER ── */
+header{background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:60px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.35);z-index:1000;gap:8px}
+.hdr-brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.hdr-logo{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:50%;padding:3px}
+.hdr-title h1{font-size:14px;font-weight:700;line-height:1.3}
+.hdr-title span{font-size:10px;opacity:.75}
+.hdr-nav{display:flex;gap:5px;flex-wrap:wrap}
+.nav-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 11px;border-radius:6px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;transition:background .2s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.nav-btn:hover,.nav-btn.active{background:var(--accent);border-color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+/* Language selector */
+.lang-select{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:5px 8px;border-radius:6px;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;outline:none}
+.lang-select option{background:var(--primary);color:#fff}
+.esri-badge{background:var(--accent);color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+/* ── MAIN ── */
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+/* ── MAP AREAS ── */
+#map{flex:1;z-index:1}
+#cesium-container{flex:1;z-index:1;display:none}
+/* ── MAP TOOLBAR ── */
+.map-toolbar{position:absolute;top:10px;left:10px;right:calc(var(--sidebar) + 10px);z-index:500;display:flex;flex-direction:row;flex-wrap:wrap;gap:5px;justify-content:flex-start;align-items:flex-start;overflow:hidden}
+.map-btn{background:#fff;border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(0,0,0,.12);transition:all .2s;color:var(--primary);font-weight:600;white-space:nowrap}
+.map-btn:hover,.map-btn.active{background:var(--primary);color:#fff}
+/* Wayback panel */
+.wayback-panel{position:absolute;bottom:50px;right:calc(var(--sidebar) + 10px);z-index:500;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 16px;box-shadow:0 4px 14px rgba(0,0,0,.15);min-width:320px;display:none}
+.wayback-panel.open{display:block}
+.wayback-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.wayback-slider{width:100%;accent-color:var(--accent);cursor:pointer}
+.wayback-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px}
+.wayback-year-display{text-align:center;font-size:16px;font-weight:700;color:var(--accent);margin:4px 0}
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar);background:var(--card);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;box-shadow:-2px 0 8px rgba(0,0,0,.06)}
+.sidebar-tabs{display:flex;background:var(--primary)}
+.sidebar-tab{flex:1;padding:10px 2px;color:rgba(255,255,255,.6);text-align:center;cursor:pointer;font-size:11px;border-bottom:3px solid transparent;transition:all .2s;font-family:'Cairo',sans-serif}
+.sidebar-tab.active{color:#fff;border-bottom-color:var(--accent);background:rgba(255,255,255,.08)}
+.sidebar-tab i{display:block;font-size:15px;margin-bottom:2px}
+.sidebar-content{flex:1;overflow-y:auto;padding:12px}
+.sidebar-content::-webkit-scrollbar{width:4px}
+.sidebar-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.stat-card{background:var(--bg);border-radius:9px;padding:10px;text-align:center;border:1px solid var(--border);transition:transform .2s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-num{font-size:24px;font-weight:900;color:var(--primary);line-height:1}
+.stat-label{font-size:10px;color:var(--muted);margin-top:3px}
+.stat-icon{font-size:18px;margin-bottom:5px}
+.stat-card.blue .stat-icon{color:var(--accent)}
+.stat-card.green .stat-icon{color:var(--green)}
+.stat-card.orange .stat-icon{color:var(--accent2)}
+.stat-card.red .stat-icon{color:var(--red)}
+.section-title{font-size:12px;font-weight:700;color:var(--primary);border-right:3px solid var(--accent);padding-right:7px;margin-bottom:8px;margin-top:14px}
+/* Progress */
+.prog-item{margin-bottom:10px}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;color:var(--muted)}
+.prog-bar{height:7px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.prog-fill{height:100%;border-radius:4px}
+.fill-blue{background:linear-gradient(90deg,var(--accent),#64b5f6)}
+.fill-green{background:linear-gradient(90deg,var(--green),#66bb6a)}
+.fill-orange{background:linear-gradient(90deg,var(--accent2),#ffb74d)}
+/* Project items */
+.project-item{background:var(--bg);border-radius:7px;padding:9px 11px;margin-bottom:7px;border:1px solid var(--border);cursor:pointer;transition:all .2s;border-right:4px solid var(--accent)}
+.project-item:hover{background:#e3eaf3;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.project-item.completed{border-right-color:var(--green)}
+.project-item.ongoing{border-right-color:var(--yellow)}
+.project-item.planned{border-right-color:var(--muted)}
+.project-name{font-size:11px;font-weight:600;color:var(--text)}
+.project-meta{display:flex;gap:6px;margin-top:3px;font-size:10px;color:var(--muted);flex-wrap:wrap}
+.project-meta span{display:flex;align-items:center;gap:2px}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700}
+.badge-green{background:#e8f5e9;color:var(--green)}
+.badge-yellow{background:#fff8e1;color:var(--yellow)}
+.badge-blue{background:#e3f2fd;color:var(--accent)}
+.badge-gray{background:#eceff1;color:#607d8b}
+/* Tender items */
+.tender-item{background:var(--bg);border-radius:7px;padding:9px 11px;margin-bottom:7px;border:1px solid var(--border)}
+.tender-name{font-size:11px;font-weight:600}
+.tender-date{font-size:10px;color:var(--muted);margin-top:3px}
+/* Layer items */
+.layer-item{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--bg);border-radius:7px;margin-bottom:7px;border:1px solid var(--border)}
+.layer-info{display:flex;align-items:center;gap:9px}
+.layer-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+.layer-name{font-size:11px;font-weight:600}
+.layer-count{font-size:10px;color:var(--muted)}
+.toggle{position:relative;width:34px;height:19px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:20px;transition:.3s}
+.toggle-slider:before{content:'';position:absolute;width:13px;height:13px;right:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--accent)}
+.toggle input:checked+.toggle-slider:before{right:18px}
+/* Search */
+.search-box{display:flex;gap:5px;margin-bottom:10px}
+.search-input{flex:1;border:1px solid var(--border);border-radius:7px;padding:6px 9px;font-family:'Cairo',sans-serif;font-size:11px;outline:none;direction:rtl}
+.search-input:focus{border-color:var(--accent)}
+.search-btn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:0 10px;cursor:pointer}
+/* Basemap cards */
+.basemap-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.basemap-card{flex:1;min-width:70px;border:2px solid var(--border);border-radius:7px;overflow:hidden;cursor:pointer;transition:border-color .2s;text-align:center}
+.basemap-card.active{border-color:var(--accent)}
+.basemap-card div{height:44px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.basemap-card span{display:block;font-size:10px;padding:3px;color:var(--text)}
+/* ── POPUP / MODAL ── */
+.popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center}
+.popup-overlay.open{display:flex}
+.popup-modal{background:#fff;border-radius:14px;width:580px;max-width:95vw;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.popup-header{background:var(--primary);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-start}
+.popup-project-title{font-size:15px;font-weight:700;direction:rtl;flex:1;padding-left:10px}
+.popup-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+.popup-close:hover{color:#fff}
+.popup-tabs{display:flex;background:#f5f7fa;border-bottom:1px solid var(--border)}
+.popup-tab{flex:1;padding:9px;text-align:center;font-size:12px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;transition:all .2s;font-family:'Cairo',sans-serif}
+.popup-tab.active{color:var(--primary);font-weight:700;border-bottom-color:var(--accent)}
+.popup-body{flex:1;overflow-y:auto;padding:16px}
+.popup-body::-webkit-scrollbar{width:4px}
+.popup-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.popup-panel{display:none}.popup-panel.active{display:block}
+/* Info tab */
+.info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px;direction:rtl}
+.info-row:last-child{border-bottom:none}
+.info-row .lbl{color:var(--muted)}
+.info-row .val{font-weight:600;color:var(--text)}
+/* Media tab */
+.media-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.media-img{width:100%;height:120px;object-fit:cover;border-radius:8px;cursor:pointer;transition:opacity .2s}
+.media-img:hover{opacity:.85}
+.video-embed{width:100%;border-radius:8px;border:none}
+/* Timeline tab */
+.timeline{position:relative;padding-right:20px}
+.timeline::before{content:'';position:absolute;right:7px;top:4px;bottom:4px;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:16px;padding-right:22px}
+.tl-dot{position:absolute;right:-6px;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px var(--border)}
+.tl-item.done .tl-dot{background:var(--green);box-shadow:0 0 0 2px var(--green)}
+.tl-item.active .tl-dot{background:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.tl-item.future .tl-dot{background:#e0e0e0}
+.tl-date{font-size:11px;color:var(--muted);margin-bottom:2px}
+.tl-title{font-size:13px;font-weight:600;color:var(--text)}
+.tl-desc{font-size:11px;color:var(--muted);margin-top:2px}
+/* ── STATUSBAR ── */
+.statusbar{background:var(--primary);color:rgba(255,255,255,.8);padding:4px 16px;font-size:10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.statusbar-left,.statusbar-right{display:flex;gap:14px;align-items:center}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;margin-left:4px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* ── LTR LANGUAGES ── */
+body.ltr{direction:ltr;font-family:'Roboto',sans-serif}
+body.ltr .section-title{border-right:none;padding-right:0;border-left:3px solid var(--accent);padding-left:7px}
+body.ltr .project-item{border-right:none;border-left:4px solid var(--accent)}
+body.ltr .project-item.completed{border-left-color:var(--green)}
+body.ltr .project-item.ongoing{border-left-color:var(--yellow)}
+body.ltr .info-row{flex-direction:row-reverse}
+body.ltr .popup-project-title{direction:ltr}
+/* Highlight selected */
+.project-item.highlight{background:#d0e8ff!important}
+/* Leaflet popup override */
+.leaflet-popup-content-wrapper{border-radius:10px;font-family:'Cairo',sans-serif;direction:rtl;max-width:260px}
+.lf-popup-title{font-weight:700;color:var(--primary);font-size:13px;margin-bottom:5px}
+.lf-popup-row{font-size:11px;color:var(--muted);margin-bottom:2px}
+.lf-popup-btn{margin-top:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 14px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;width:100%}
+.lf-popup-btn:hover{background:var(--primary2)}
+/* ArcGIS credits hidden */
+.esri-attribution{display:none!important}
+/* ── KPI DASHBOARD ── */
+#kpi-dashboard{display:none;flex:1;flex-direction:column;overflow:hidden;background:#eef2f7;z-index:10}
+#kpi-dashboard.open{display:flex}
+.kpi-header{background:var(--primary);color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.kpi-header h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.kpi-back-btn{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 16px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;transition:background .2s}
+.kpi-back-btn:hover{background:var(--accent)}
+.kpi-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.kpi-body::-webkit-scrollbar{width:5px}
+.kpi-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* KPI cards row */
+.kpi-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi-card{background:#fff;border-radius:12px;padding:14px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.07);border-top:4px solid var(--accent);transition:transform .2s;min-width:0}
+/* kpi-card defined above */
+.kpi-card:hover{transform:translateY(-3px)}
+.kpi-card .kpi-val{font-size:30px;font-weight:900;line-height:1;margin-bottom:4px}
+.kpi-card .kpi-lbl{font-size:11px;color:var(--muted)}
+.kpi-card .kpi-sub{font-size:10px;margin-top:4px;opacity:.7}
+/* Charts grid */
+.kpi-charts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kpi-charts.two-col{grid-template-columns:auto 1fr}
+.kpi-chart-box{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.kpi-chart-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:6px;border-right:3px solid var(--accent);padding-right:8px}
+.kpi-chart-title.green{border-right-color:var(--green)}
+.kpi-chart-title.orange{border-right-color:var(--accent2)}
+.kpi-chart-title.purple{border-right-color:var(--purple)}
+/* Progress table */
+.kpi-table{width:100%;border-collapse:collapse;font-size:12px}
+.kpi-table th{background:var(--bg);padding:8px 10px;text-align:right;color:var(--muted);font-weight:600;border-bottom:2px solid var(--border)}
+.kpi-table td{padding:8px 10px;border-bottom:1px solid var(--bg);vertical-align:middle}
+.kpi-table tr:hover td{background:#f5f8fc}
+.kpi-prog-bar{height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;min-width:80px}
+.kpi-prog-fill{height:100%;border-radius:3px}
+/* Gauge-like ring */
+.kpi-ring{width:80px;height:80px;margin:0 auto 8px}
+/* ── 3D SCENE TOOLBAR ── */
+#scene-toolbar{position:absolute;right:12px;top:52px;z-index:600;display:none;flex-direction:row;flex-wrap:wrap;gap:3px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:5px 6px;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:290px;justify-content:flex-start}
+.stb-btn{width:34px;height:34px;background:transparent;border:none;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:14px;transition:all .2s;position:relative}
+.stb-btn:hover{background:var(--bg);color:var(--accent)}
+.stb-btn.active{background:var(--accent);color:#fff}
+.stb-vdivider{width:1px;background:var(--border);margin:0 2px;align-self:stretch}
+.stb-btn[title]:hover::after{content:attr(title);position:absolute;bottom:40px;right:50%;transform:translateX(50%);background:rgba(10,45,82,.92);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;white-space:nowrap;font-family:'Cairo',sans-serif;pointer-events:none;z-index:700}
+/* 2D back button */
+#btn-back-2d{position:absolute;top:12px;right:12px;z-index:600;background:#0a2d52;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.4);display:none;align-items:center;gap:7px;transition:background .2s;white-space:nowrap}
+#btn-back-2d:hover{background:var(--accent)}
+/* ── NAV TOOLBAR ── */
+#nav-toolbar{position:absolute;right:10px;top:10px;z-index:500;display:flex;flex-direction:column;gap:3px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 5px;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.ntb-group{display:flex;flex-direction:column;gap:3px}
+.ntb-divider{height:1px;background:var(--border);margin:4px 0}
+.ntb-btn{width:34px;height:34px;background:transparent;border:none;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:14px;transition:all .2s;position:relative}
+.ntb-btn:hover{background:var(--bg);color:var(--accent)}
+.ntb-btn.active{background:var(--accent);color:#fff}
+.ntb-btn[title]:hover::after{content:attr(title);position:absolute;right:42px;top:50%;transform:translateY(-50%);background:rgba(10,45,82,.92);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;white-space:nowrap;font-family:'Cairo',sans-serif;pointer-events:none;z-index:600}
+/* Tool panels */
+.tool-panel{position:absolute;right:54px;z-index:501;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:0 4px 16px rgba(0,0,0,.18);min-width:240px;display:none;font-family:'Cairo',sans-serif;direction:rtl}
+.tool-panel.open{display:block}
+.tool-panel-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.tool-panel-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0}
+.tool-panel-close:hover{color:var(--red)}
+.tp-input{width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-family:'Cairo',sans-serif;font-size:12px;margin-bottom:7px;outline:none;direction:ltr}
+.tp-input:focus{border-color:var(--accent)}
+.tp-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700}
+.tp-btn:hover{background:var(--primary)}
+/* Bookmarks */
+.bm-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;cursor:pointer;transition:background .15s;font-size:12px;color:var(--text)}
+.bm-item:hover{background:var(--bg)}
+.bm-item i{color:var(--accent);width:16px}
+/* Basemap Gallery */
+.bmg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bmg-card{border:2px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .2s;text-align:center}
+.bmg-card:hover,.bmg-card.active{border-color:var(--accent)}
+.bmg-card .bmg-thumb{height:52px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.bmg-card span{display:block;font-size:10px;padding:3px 2px;color:var(--text);font-family:'Cairo',sans-serif}
+/* Identify panel */
+#panel-identify-results{top:120px}
+.identify-result{background:var(--bg);border-radius:7px;padding:9px;margin-bottom:7px;border:1px solid var(--border);cursor:pointer;transition:background .15s}
+.identify-result:hover{background:#e3eaf3}
+.identify-result-name{font-size:12px;font-weight:700;color:var(--primary)}
+.identify-result-meta{font-size:10px;color:var(--muted);margin-top:2px}
+/* Measure */
+.measure-result{background:#e3f2fd;border-radius:6px;padding:8px;text-align:center;font-size:13px;font-weight:700;color:var(--accent);margin-top:8px;display:none}
+/* Tender detail button */
+.tender-detail-btn{margin-top:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;display:flex;align-items:center;gap:6px;transition:background .2s}
+.tender-detail-btn:hover{background:var(--accent)}
+/* Tender modal extras */
+.contact-box{background:var(--bg);border-radius:8px;padding:12px;border:1px solid var(--border);margin-top:10px}
+.contact-box a{color:var(--accent);text-decoration:none}
+.contact-box a:hover{text-decoration:underline}
+.tender-value-badge{display:inline-block;background:#e3f2fd;color:var(--accent);border-radius:8px;padding:8px 16px;font-size:18px;font-weight:900;margin:8px 0}
+</style>
+</head>
+<body id="body-root">
+
+<!-- ════════════════════════ HEADER ════════════════════════ -->
+<header>
+  <div class="hdr-brand">
+    <img class="hdr-logo" src="https://hib.ly/wp-content/uploads/2023/03/logo-5.png"
+         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><circle cx=%2220%22 cy=%2220%22 r=%2220%22 fill=%22%230a2d52%22/><text x=%2220%22 y=%2225%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2214%22>HIB</text></svg>'"
+         alt="HIB Logo"/>
+    <div class="hdr-title">
+      <h1 data-i18n="title">البوابة الجغرافية المكانية</h1>
+      <span data-i18n="subtitle">جهاز تنفيذ مشروعات الإسكان والمرافق — ليبيا &nbsp;<span style="background:var(--accent);color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">v2</span></span>
+    </div>
+  </div>
+
+  <div class="hdr-nav">
+    <button class="nav-btn" id="btn-kpi"         onclick="setMainNav(this);toggleKpiDashboard(this)"><i class="fa fa-tachometer-alt"></i> مؤشرات الأداء</button>
+    <button class="nav-btn" id="btn-dashboard"   onclick="setMainNav(this);showTab('dashboard')"><i class="fa fa-chart-pie"></i> <span data-i18n="nav_dashboard">لوحة البيانات</span></button>
+    <button class="nav-btn" id="btn-projects"    onclick="setMainNav(this);showTab('projects')"><i class="fa fa-hard-hat"></i> <span data-i18n="nav_projects">المشروعات</span></button>
+    <button class="nav-btn" id="btn-wayback-app" onclick="setMainNav(this);toggleWaybackApp(this)"><i class="fa fa-satellite-dish"></i> متابعة المشروعات</button>
+    <button class="nav-btn" id="btn-tenders"     onclick="setMainNav(this);showTab('tenders')"><i class="fa fa-file-contract"></i> <span data-i18n="nav_tenders">العطاءات</span></button>
+    <button class="nav-btn" id="btn-layers"      onclick="setMainNav(this);showTab('layers')"><i class="fa fa-layer-group"></i> <span data-i18n="nav_layers">الطبقات</span></button>
+  </div>
+
+  <div class="hdr-right">
+    <!-- Language Switcher -->
+    <select class="lang-select" onchange="setLanguage(this.value)" title="Language">
+      <option value="ar">🌍 العربية</option>
+      <option value="en">🌍 English</option>
+      <option value="fr">🌍 Français</option>
+      <option value="it">🌍 Italiano</option>
+      <option value="es">🌍 Español</option>
+    </select>
+    <span class="esri-badge">Esri ArcGIS</span>
+    <i class="fa fa-globe" style="font-size:18px;color:var(--accent)"></i>
+  </div>
+</header>
+
+<!-- ════════════════════════ MAIN ════════════════════════ -->
+<div class="main">
+
+  <!-- ── KPI PERFORMANCE DASHBOARD ── -->
+  <div id="kpi-dashboard">
+    <div class="kpi-header">
+      <h2><i class="fa fa-tachometer-alt" style="color:var(--accent)"></i> مؤشرات الأداء — Performance Indicators</h2>
+      <button class="kpi-back-btn" onclick="toggleKpiDashboard(document.getElementById('btn-kpi'))">
+        <i class="fa fa-arrow-right"></i> العودة للخريطة
+      </button>
+    </div>
+    <div class="kpi-body" id="kpi-body">
+      <!-- KPI cards populated by JS -->
+    </div>
+  </div>
+
+  <!-- 2D Leaflet Map -->
+  <div id="map"></div>
+  <!-- 3D ArcGIS WebScene (SDK SceneView) -->
+  <div id="cesium-container" style="display:none;flex:1;position:relative"></div>
+
+  <!-- 3D Navigation Toolbar (shown in 3D mode, horizontal row under back button) -->
+  <div id="scene-toolbar">
+    <!-- Pan / Rotate toggle -->
+    <button class="stb-btn active" id="stb-pan-rotate" onclick="toggle3DPanRotate(this)" title="تبديل تحريك / تدوير — Toggle Pan / Rotate"><i class="fa fa-hand-paper" id="stb-pan-rotate-icon"></i></button>
+    <div class="stb-vdivider"></div>
+    <!-- Zoom -->
+    <button class="stb-btn" onclick="scene3DZoom(1)"  title="تكبير — Zoom In"><i class="fa fa-search-plus"></i></button>
+    <button class="stb-btn" onclick="scene3DZoom(-1)" title="تصغير — Zoom Out"><i class="fa fa-search-minus"></i></button>
+    <button class="stb-btn" onclick="scene3DHome()"   title="الامتداد الكامل — Full Extent"><i class="fa fa-globe-africa"></i></button>
+    <div class="stb-vdivider"></div>
+    <!-- View angle -->
+    <button class="stb-btn" onclick="scene3DTiltUp()"   title="إمالة لأعلى — Tilt Up"><i class="fa fa-angle-up"></i></button>
+    <button class="stb-btn" onclick="scene3DTiltDown()" title="إمالة لأسفل — Tilt Down"><i class="fa fa-angle-down"></i></button>
+    <button class="stb-btn" onclick="scene3DTopView()"  title="منظر من الأعلى — Top View"><i class="fa fa-arrows-alt"></i></button>
+    <button class="stb-btn" onclick="scene3DNorth()"    title="الشمال — North"><i class="fa fa-compass"></i></button>
+    <div class="stb-vdivider"></div>
+    <!-- Tools -->
+    <button class="stb-btn" id="stb-layers"   onclick="toggle3DLayerList(this)"  title="الطبقات — Layers"><i class="fa fa-layer-group"></i></button>
+    <button class="stb-btn" id="stb-search"   onclick="toggle3DSearch(this)"     title="بحث — Search"><i class="fa fa-search"></i></button>
+    <button class="stb-btn" id="stb-daylight" onclick="toggle3DDaylight(this)"   title="إضاءة نهارية — Daylight"><i class="fa fa-sun"></i></button>
+    <button class="stb-btn"                   onclick="scene3DBasemap()"          title="الخريطة الأساسية — Basemap"><i class="fa fa-map"></i></button>
+  </div>
+
+  <!-- Prominent Back to 2D button -->
+  <button id="btn-back-2d" onclick="toggle3D()">
+    <i class="fa fa-arrow-right"></i> العودة للخريطة 2D
+  </button>
+  <!-- Wayback App iframe -->
+  <div id="wayback-app-container" style="display:none;flex:1;flex-direction:column;z-index:2">
+    <iframe id="wayback-app-iframe"
+      src="about:blank"
+      style="flex:1;width:100%;height:100%;border:none"
+      allowfullscreen>
+    </iframe>
+  </div>
+
+  <!-- ── NAVIGATION TOOLBAR ── -->
+  <div id="nav-toolbar">
+    <!-- Navigation group -->
+    <div class="ntb-group">
+      <button class="ntb-btn active" id="tool-pan" onclick="setActiveTool('pan',this)" title="تحريك الخريطة — Pan"><i class="fa fa-hand-paper"></i></button>
+      <button class="ntb-btn" id="tool-zoomin" onclick="map.zoomIn()" title="تكبير — Zoom In"><i class="fa fa-search-plus"></i></button>
+      <button class="ntb-btn" id="tool-zoomout" onclick="map.zoomOut()" title="تصغير — Zoom Out"><i class="fa fa-search-minus"></i></button>
+      <button class="ntb-btn" id="tool-fullextent" onclick="resetView()" title="الامتداد الكامل — Full Extent"><i class="fa fa-globe-africa"></i></button>
+      <button class="ntb-btn" id="tool-prevext" onclick="goToPrevExtent()" title="العودة للامتداد السابق — Previous Extent"><i class="fa fa-arrow-right"></i></button>
+    </div>
+    <div class="ntb-divider"></div>
+    <!-- Query group -->
+    <div class="ntb-group">
+      <button class="ntb-btn" id="tool-identify" onclick="setActiveTool('identify',this)" title="تعرّف — Identify"><i class="fa fa-info-circle"></i></button>
+      <button class="ntb-btn" id="tool-measure" onclick="setActiveTool('measure',this)" title="قياس المسافة — Measure"><i class="fa fa-ruler"></i></button>
+    </div>
+    <div class="ntb-divider"></div>
+    <!-- Navigation aids group -->
+    <div class="ntb-group">
+      <button class="ntb-btn" id="tool-gotoXY" onclick="toggleToolPanel('panel-gotoXY',this)" title="الانتقال إلى إحداثيات — Go To XY"><i class="fa fa-crosshairs"></i></button>
+      <button class="ntb-btn" id="tool-bookmarks" onclick="toggleToolPanel('panel-bookmarks',this)" title="الإشارات المرجعية — Bookmarks"><i class="fa fa-bookmark"></i></button>
+      <button class="ntb-btn" id="tool-basemap-gallery" onclick="toggleToolPanel('panel-basemap-gallery',this)" title="معرض الخرائط الأساسية — Basemap Gallery"><i class="fa fa-layer-group"></i></button>
+    </div>
+    <div class="ntb-divider"></div>
+    <!-- Extra tools -->
+    <div class="ntb-group">
+      <button class="ntb-btn" id="tool-select" onclick="setActiveTool('select',this)" title="تحديد المعالم — Select Features"><i class="fa fa-object-group"></i></button>
+      <button class="ntb-btn" onclick="exportData()" title="تصدير البيانات — Export Data"><i class="fa fa-download"></i></button>
+      <button class="ntb-btn" onclick="printMap()" title="طباعة الخريطة — Print Map"><i class="fa fa-print"></i></button>
+    </div>
+  </div>
+
+  <!-- Go To XY Panel -->
+  <div class="tool-panel" id="panel-gotoXY" style="top:200px">
+    <div class="tool-panel-title"><span><i class="fa fa-crosshairs" style="color:var(--accent)"></i> الانتقال إلى إحداثيات</span><button class="tool-panel-close" onclick="closeToolPanel('panel-gotoXY')">✕</button></div>
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">خط العرض (Latitude)</label>
+    <input class="tp-input" id="goto-lat" type="number" placeholder="مثال: 32.8872" step="0.0001"/>
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">خط الطول (Longitude)</label>
+    <input class="tp-input" id="goto-lng" type="number" placeholder="مثال: 13.1913" step="0.0001"/>
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">مستوى التكبير (Zoom)</label>
+    <input class="tp-input" id="goto-zoom" type="number" placeholder="1 — 18" value="12" min="1" max="18"/>
+    <button class="tp-btn" onclick="gotoXY()"><i class="fa fa-location-arrow"></i> انتقال</button>
+    <div id="goto-result" style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center"></div>
+  </div>
+
+  <!-- Bookmarks Panel -->
+  <div class="tool-panel" id="panel-bookmarks" style="top:240px;min-width:220px">
+    <div class="tool-panel-title"><span><i class="fa fa-bookmark" style="color:var(--accent)"></i> الإشارات المرجعية</span><button class="tool-panel-close" onclick="closeToolPanel('panel-bookmarks')">✕</button></div>
+    <div id="bookmarks-list">
+      <div class="bm-item" onclick="flyTo(32.8872,13.1913,12)"><i class="fa fa-map-marker-alt"></i> طرابلس — المركز</div>
+      <div class="bm-item" onclick="flyTo(32.1100,20.0680,11)"><i class="fa fa-map-marker-alt"></i> بنغازي</div>
+      <div class="bm-item" onclick="flyTo(32.3754,15.0925,11)"><i class="fa fa-map-marker-alt"></i> مصراتة</div>
+      <div class="bm-item" onclick="flyTo(27.0377,14.4285,11)"><i class="fa fa-map-marker-alt"></i> سبها</div>
+      <div class="bm-item" onclick="flyTo(32.7650,22.6380,11)"><i class="fa fa-map-marker-alt"></i> درنة</div>
+      <div class="bm-item" onclick="flyTo(31.7600,14.0200,11)"><i class="fa fa-map-marker-alt"></i> بني وليد</div>
+      <div class="bm-item" onclick="flyTo(31.8700,10.9800,11)"><i class="fa fa-map-marker-alt"></i> نالوت</div>
+      <div class="bm-item" onclick="flyTo(32.0800,23.9750,11)"><i class="fa fa-map-marker-alt"></i> طبرق</div>
+      <div class="bm-item" onclick="flyTo(32.6500,14.2700,11)"><i class="fa fa-map-marker-alt"></i> الخمس</div>
+      <div class="bm-item" onclick="flyTo(28.5,16.5,5)"><i class="fa fa-globe-africa"></i> ليبيا — منظر كامل</div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">إضافة إشارة للموقع الحالي</div>
+      <input class="tp-input" id="bm-name" type="text" placeholder="اسم الإشارة..."/>
+      <button class="tp-btn" onclick="addBookmark()"><i class="fa fa-plus"></i> إضافة</button>
+    </div>
+  </div>
+
+  <!-- Basemap Gallery Panel -->
+  <div class="tool-panel" id="panel-basemap-gallery" style="top:280px;min-width:280px">
+    <div class="tool-panel-title"><span><i class="fa fa-layer-group" style="color:var(--accent)"></i> معرض الخرائط الأساسية</span><button class="tool-panel-close" onclick="closeToolPanel('panel-basemap-gallery')">✕</button></div>
+    <div class="bmg-grid">
+      <div class="bmg-card active" id="bmg-streets" onclick="switchBasemap('streets');updateBmgActive('bmg-streets')"><div class="bmg-thumb" style="background:linear-gradient(135deg,#e8f0fe,#c8daf6)">🗺️</div><span>Streets</span></div>
+      <div class="bmg-card" id="bmg-satellite" onclick="switchBasemap('satellite');updateBmgActive('bmg-satellite')"><div class="bmg-thumb" style="background:linear-gradient(135deg,#1a3a1a,#2d5a2d)">🛰️</div><span>World Imagery</span></div>
+      <div class="bmg-card" id="bmg-topo" onclick="switchBasemap('topo');updateBmgActive('bmg-topo')"><div class="bmg-thumb" style="background:linear-gradient(135deg,#f5e6c8,#c8a870)">⛰️</div><span>Topographic</span></div>
+      <div class="bmg-card" id="bmg-gray" onclick="switchBasemap('gray');updateBmgActive('bmg-gray')"><div class="bmg-thumb" style="background:linear-gradient(135deg,#ddd,#bbb)">🔲</div><span>Light Gray</span></div>
+      <div class="bmg-card" id="bmg-dark" onclick="switchBasemap('dark');updateBmgActive('bmg-dark')"><div class="bmg-thumb" style="background:linear-gradient(135deg,#2a2a2a,#111)">⬛</div><span>Dark Gray</span></div>
+      <div class="bmg-card" id="bmg-ocean" onclick="switchBasemap('ocean');updateBmgActive('bmg-ocean')"><div class="bmg-thumb" style="background:linear-gradient(135deg,#0077be,#005f99)">🌊</div><span>Oceans</span></div>
+      <div class="bmg-card" id="bmg-natgeo" onclick="switchBasemap('natgeo');updateBmgActive('bmg-natgeo')"><div class="bmg-thumb" style="background:linear-gradient(135deg,#8fbc8f,#556b2f)">🌿</div><span>National Geographic</span></div>
+      <div class="bmg-card" id="bmg-hybrid" onclick="switchBasemap('hybrid');updateBmgActive('bmg-hybrid')"><div class="bmg-thumb" style="background:linear-gradient(135deg,#1a3a1a,#3a3a3a)">🏙️</div><span>Imagery Hybrid</span></div>
+    </div>
+  </div>
+
+  <!-- Identify Results Panel -->
+  <div class="tool-panel" id="panel-identify-results" style="top:120px;min-width:260px">
+    <div class="tool-panel-title"><span><i class="fa fa-info-circle" style="color:var(--accent)"></i> نتائج التعرّف</span><button class="tool-panel-close" onclick="closeToolPanel('panel-identify-results');setActiveTool('pan',document.getElementById('tool-pan'))">✕</button></div>
+    <div id="identify-results-body"><div style="text-align:center;color:var(--muted);font-size:12px;padding:14px">انقر على الخريطة لتعريف المعالم</div></div>
+  </div>
+
+  <!-- Measure Panel -->
+  <div class="tool-panel" id="panel-measure" style="top:160px">
+    <div class="tool-panel-title"><span><i class="fa fa-ruler" style="color:var(--accent)"></i> قياس المسافة</span><button class="tool-panel-close" onclick="closeToolPanel('panel-measure');stopMeasure()">✕</button></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">انقر على الخريطة لتحديد نقاط القياس — Double-click لإنهاء</div>
+    <button class="tp-btn" style="background:var(--red);margin-bottom:6px" onclick="stopMeasure()"><i class="fa fa-times"></i> إيقاف القياس</button>
+    <div class="measure-result" id="measure-result"></div>
+  </div>
+
+  <!-- Map Toolbar -->
+  <div class="map-toolbar">
+    <button class="map-btn" onclick="resetView()"><i class="fa fa-home"></i> ليبيا</button>
+    <button class="map-btn active" id="btn-streets" onclick="switchBasemap('streets')"><i class="fa fa-map"></i> <span data-i18n="btn_map">الخريطة</span></button>
+    <button class="map-btn" id="btn-satellite" onclick="switchBasemap('satellite')"><i class="fa fa-satellite"></i> <span data-i18n="btn_satellite">صورة جوية</span></button>
+    <button class="map-btn" id="btn-3d" onclick="toggle3D()"><i class="fa fa-cube"></i> <span data-i18n="btn_3d">ثلاثي الأبعاد</span></button>
+  </div>
+
+  <!-- Wayback Panel -->
+  <div class="wayback-panel" id="wayback-panel">
+    <div class="wayback-title"><i class="fa fa-history" style="color:var(--accent)"></i> <span data-i18n="wayback_title">Esri World Imagery Wayback — تتبع التطور الزمني</span></div>
+    <div class="wayback-year-display" id="wayback-year-label">2024</div>
+    <input type="range" class="wayback-slider" id="wayback-slider" min="0" max="7" value="7" oninput="changeWayback(this.value)"/>
+    <div class="wayback-labels" id="wayback-labels"></div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;text-align:center" data-i18n="wayback_desc">حرّك الشريط لمشاهدة تطور الموقع عبر السنوات</div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="sidebar-tab active" onclick="showTab('dashboard')" id="tab-dashboard"><i class="fa fa-chart-pie"></i> <span data-i18n="tab_stats">إحصائيات</span></div>
+      <div class="sidebar-tab" onclick="showTab('projects')" id="tab-projects"><i class="fa fa-hard-hat"></i> <span data-i18n="tab_proj">مشروعات</span></div>
+      <div class="sidebar-tab" onclick="showTab('tenders')" id="tab-tenders"><i class="fa fa-file-contract"></i> <span data-i18n="tab_tend">عطاءات</span></div>
+      <div class="sidebar-tab" onclick="showTab('layers')" id="tab-layers"><i class="fa fa-layer-group"></i> <span data-i18n="tab_layers">طبقات</span></div>
+    </div>
+
+    <div class="sidebar-content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="tab-panel active" id="panel-dashboard">
+        <div class="stats-grid" style="margin-top:4px">
+          <div class="stat-card blue"><div class="stat-icon"><i class="fa fa-hard-hat"></i></div><div class="stat-num">312</div><div class="stat-label" data-i18n="stat_total">إجمالي المشاريع</div></div>
+          <div class="stat-card green"><div class="stat-icon"><i class="fa fa-check-circle"></i></div><div class="stat-num">218</div><div class="stat-label" data-i18n="stat_done">مكتملة</div></div>
+          <div class="stat-card orange"><div class="stat-icon"><i class="fa fa-spinner"></i></div><div class="stat-num">64</div><div class="stat-label" data-i18n="stat_ongoing">جاري التنفيذ</div></div>
+          <div class="stat-card red"><div class="stat-icon"><i class="fa fa-calendar-alt"></i></div><div class="stat-num">30</div><div class="stat-label" data-i18n="stat_planned">مخططة</div></div>
+        </div>
+        <!-- Total Budget full-width card -->
+        <div style="background:linear-gradient(135deg,var(--primary),var(--primary2));border-radius:10px;padding:12px 14px;margin-bottom:14px;text-align:center;color:#fff">
+          <div style="font-size:11px;opacity:.8;margin-bottom:4px"><i class="fa fa-coins"></i> <span data-i18n="stat_budget">إجمالي ميزانية المشاريع</span></div>
+          <div id="total-budget-display" style="font-size:22px;font-weight:900;color:#64b5f6">...</div>
+          <div style="font-size:10px;opacity:.7;margin-top:2px">دينار ليبي</div>
+        </div>
+        <div class="section-title" data-i18n="sec_progress">نسبة الإنجاز حسب النوع</div>
+        <div class="prog-item"><div class="prog-label"><span data-i18n="type_roads">مشاريع الطرق</span><span>74%</span></div><div class="prog-bar"><div class="prog-fill fill-blue" style="width:74%"></div></div></div>
+        <div class="prog-item"><div class="prog-label"><span data-i18n="type_housing">الإسكان</span><span>61%</span></div><div class="prog-bar"><div class="prog-fill fill-green" style="width:61%"></div></div></div>
+        <div class="prog-item"><div class="prog-label"><span data-i18n="type_utilities">الكهرباء والمرافق</span><span>55%</span></div><div class="prog-bar"><div class="prog-fill fill-orange" style="width:55%"></div></div></div>
+        <div class="prog-item"><div class="prog-label"><span data-i18n="type_water">شبكات المياه</span><span>48%</span></div><div class="prog-bar"><div class="prog-fill fill-blue" style="width:48%"></div></div></div>
+        <div class="prog-item"><div class="prog-label"><span data-i18n="type_bridges">الجسور</span><span>82%</span></div><div class="prog-bar"><div class="prog-fill fill-green" style="width:82%"></div></div></div>
+        <div class="section-title" data-i18n="sec_source">مصدر البيانات</div>
+        <div style="font-size:11px;color:var(--muted);background:var(--bg);border-radius:7px;padding:9px;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span data-i18n="meta_updated">آخر تحديث</span><span style="color:var(--primary);font-weight:600">01/06/2026</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span data-i18n="meta_source">مصدر</span><span style="color:var(--primary);font-weight:600">ArcGIS Online</span></div>
+          <div style="display:flex;justify-content:space-between"><span data-i18n="meta_crs">نظام الإحداثيات</span><span style="color:var(--primary);font-weight:600">WGS 1984</span></div>
+        </div>
+      </div>
+
+      <!-- ── PROJECTS ── -->
+      <div class="tab-panel" id="panel-projects">
+        <div class="search-box">
+          <input class="search-input" type="text" data-i18n-placeholder="search_ph" placeholder="بحث في المشروعات..." oninput="filterProjects(this.value)"/>
+          <button class="search-btn"><i class="fa fa-search"></i></button>
+        </div>
+        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
+          <span class="badge badge-blue" style="cursor:pointer" onclick="filterByStatus('')" data-i18n="filter_all">الكل</span>
+          <span class="badge badge-green" style="cursor:pointer" onclick="filterByStatus('completed')" data-i18n="filter_done">مكتمل</span>
+          <span class="badge badge-yellow" style="cursor:pointer" onclick="filterByStatus('ongoing')" data-i18n="filter_ongoing">جاري</span>
+          <span class="badge badge-gray" style="cursor:pointer" onclick="filterByStatus('planned')" data-i18n="filter_planned">مخطط</span>
+        </div>
+        <div id="project-list"></div>
+      </div>
+
+      <!-- ── TENDERS ── -->
+      <div class="tab-panel" id="panel-tenders">
+        <div class="section-title" style="margin-top:4px" data-i18n="sec_tenders">العطاءات المطروحة</div>
+        <div id="tender-list"></div>
+      </div>
+
+      <!-- ── LAYERS ── -->
+      <div class="tab-panel" id="panel-layers">
+        <div class="section-title" style="margin-top:4px" data-i18n="sec_layers">طبقات البيانات</div>
+        <div class="layer-item"><div class="layer-info"><div class="layer-dot" style="background:#1e88e5"></div><div><div class="layer-name" data-i18n="lyr_roads">مشاريع الطرق</div><div class="layer-count">118 <span data-i18n="lyr_count">مشروع</span></div></div></div><label class="toggle"><input type="checkbox" checked onchange="toggleLayer('roads',this.checked)"><span class="toggle-slider"></span></label></div>
+        <div class="layer-item"><div class="layer-info"><div class="layer-dot" style="background:#2e7d32"></div><div><div class="layer-name" data-i18n="lyr_housing">مشاريع الإسكان</div><div class="layer-count">74 <span data-i18n="lyr_count">مشروع</span></div></div></div><label class="toggle"><input type="checkbox" checked onchange="toggleLayer('housing',this.checked)"><span class="toggle-slider"></span></label></div>
+        <div class="layer-item"><div class="layer-info"><div class="layer-dot" style="background:#e65100"></div><div><div class="layer-name" data-i18n="lyr_water">شبكات المياه والصرف</div><div class="layer-count">52 <span data-i18n="lyr_count">مشروع</span></div></div></div><label class="toggle"><input type="checkbox" checked onchange="toggleLayer('water',this.checked)"><span class="toggle-slider"></span></label></div>
+        <div class="layer-item"><div class="layer-info"><div class="layer-dot" style="background:#f57f17"></div><div><div class="layer-name" data-i18n="lyr_bridges">الجسور والأنفاق</div><div class="layer-count">28 <span data-i18n="lyr_count">مشروع</span></div></div></div><label class="toggle"><input type="checkbox" checked onchange="toggleLayer('bridges',this.checked)"><span class="toggle-slider"></span></label></div>
+        <div class="layer-item"><div class="layer-info"><div class="layer-dot" style="background:#6a1b9a"></div><div><div class="layer-name" data-i18n="lyr_util">الكهرباء والمرافق</div><div class="layer-count">40 <span data-i18n="lyr_count">مشروع</span></div></div></div><label class="toggle"><input type="checkbox" onchange="toggleLayer('utilities',this.checked)"><span class="toggle-slider"></span></label></div>
+        <div class="layer-item"><div class="layer-info"><div class="layer-dot" style="background:#c62828"></div><div><div class="layer-name" data-i18n="lyr_tenders">العطاءات النشطة</div><div class="layer-count">4 <span data-i18n="lyr_count_t">عطاءات</span></div></div></div><label class="toggle"><input type="checkbox" onchange="toggleLayer('tenders',this.checked)"><span class="toggle-slider"></span></label></div>
+        <div class="section-title" data-i18n="sec_basemap">الخريطة الأساسية</div>
+        <div class="basemap-row">
+          <div class="basemap-card active" id="bm-streets" onclick="switchBasemap('streets')"><div style="background:linear-gradient(135deg,#e8f0fe,#c8daf6)">🗺️</div><span data-i18n="bm_streets">الخرائط</span></div>
+          <div class="basemap-card" id="bm-satellite" onclick="switchBasemap('satellite')"><div style="background:linear-gradient(135deg,#1a3a1a,#2d5a2d)">🛰️</div><span data-i18n="bm_satellite">الصور الجوية</span></div>
+          <div class="basemap-card" id="bm-topo" onclick="switchBasemap('topo')"><div style="background:linear-gradient(135deg,#f5e6c8,#c8a870)">⛰️</div><span data-i18n="bm_topo">طبوغرافيا</span></div>
+          <div class="basemap-card" id="bm-gray" onclick="switchBasemap('gray')"><div style="background:linear-gradient(135deg,#ddd,#bbb)">🔲</div><span data-i18n="bm_gray">رمادي</span></div>
+        </div>
+        <div class="section-title" data-i18n="sec_tools">أدوات التحليل</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <button class="map-btn" style="justify-content:flex-start;width:100%" onclick="toggleHeatmap()"><i class="fa fa-fire"></i> <span data-i18n="tool_heat">خريطة الكثافة</span></button>
+          <button class="map-btn" style="justify-content:flex-start;width:100%" onclick="exportData()"><i class="fa fa-download"></i> <span data-i18n="tool_export">تصدير البيانات CSV</span></button>
+          <button class="map-btn" style="justify-content:flex-start;width:100%" onclick="toggle3D()"><i class="fa fa-cube"></i> <span data-i18n="tool_3d">تبديل العرض 3D / 2D</span></button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /sidebar -->
+</div><!-- /main -->
+
+<!-- ════════════════════════ STATUS BAR ════════════════════════ -->
+<div class="statusbar">
+  <div class="statusbar-left">
+    <span><span class="status-dot"></span> <span data-i18n="status_connected">متصل بـ ArcGIS Online</span></span>
+    <span id="coord-display"><i class="fa fa-map-pin"></i> <span data-i18n="status_coords">إحداثيات الخريطة</span></span>
+  </div>
+  <div class="statusbar-right">
+    <span>WGS84 / Web Mercator</span>
+    <span><i class="fa fa-layer-group"></i> <span id="active-layers-count">4</span> <span data-i18n="status_layers">طبقة نشطة</span></span>
+    <span>© 2026 <strong>Esri North Africa</strong>. All Rights Reserved.</span>
+  </div>
+</div>
+
+<!-- ════════════════════════ TENDER DETAIL MODAL ════════════════════════ -->
+<div class="popup-overlay" id="tender-modal" onclick="if(event.target===this)closeTenderModal()">
+  <div class="popup-modal" style="max-width:560px">
+    <div class="popup-header" style="background:var(--accent2)">
+      <div class="popup-project-title" id="tender-modal-title">تفاصيل العطاء</div>
+      <button class="popup-close" onclick="closeTenderModal()">✕</button>
+    </div>
+    <div class="popup-body" style="padding:18px">
+      <div id="tender-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ PROJECT DETAIL MODAL ════════════════════════ -->
+<div class="popup-overlay" id="project-modal" onclick="if(event.target===this)closeModal()">
+  <div class="popup-modal">
+    <div class="popup-header">
+      <div class="popup-project-title" id="modal-title">اسم المشروع</div>
+      <button class="popup-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="popup-tabs">
+      <div class="popup-tab active" onclick="showPopupTab('info')" id="ptab-info" data-i18n="ptab_info">معلومات</div>
+      <div class="popup-tab" onclick="showPopupTab('media')" id="ptab-media" data-i18n="ptab_media">الصور والوسائط</div>
+      <div class="popup-tab" onclick="showPopupTab('timeline')" id="ptab-timeline" data-i18n="ptab_timeline">الخطة الزمنية</div>
+    </div>
+    <div class="popup-body">
+      <div class="popup-panel active" id="ppanel-info"></div>
+      <div class="popup-panel" id="ppanel-media"></div>
+      <div class="popup-panel" id="ppanel-timeline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ SCRIPTS ════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://js.arcgis.com/4.30/"></script>
+<script>
+// ══════════════════════════════════════════════════════════════════════════
+// TRANSLATIONS
+// ══════════════════════════════════════════════════════════════════════════
+const T = {
+  ar:{dir:'rtl',font:'Cairo',stat_budget:'إجمالي ميزانية المشاريع',title:'البوابة الجغرافية المكانية',subtitle:'جهاز تنفيذ مشروعات الإسكان والمرافق — ليبيا',nav_dashboard:'لوحة البيانات',nav_projects:'المشروعات',nav_tenders:'العطاءات',nav_layers:'الطبقات',tab_stats:'إحصائيات',tab_proj:'مشروعات',tab_tend:'عطاءات',tab_layers:'طبقات',stat_total:'إجمالي المشاريع',stat_done:'مكتملة',stat_ongoing:'جاري التنفيذ',stat_planned:'مخططة',sec_progress:'نسبة الإنجاز حسب النوع',type_roads:'مشاريع الطرق',type_housing:'الإسكان',type_utilities:'الكهرباء والمرافق',type_water:'شبكات المياه',type_bridges:'الجسور',sec_source:'مصدر البيانات',meta_updated:'آخر تحديث',meta_source:'مصدر',meta_crs:'نظام الإحداثيات',sec_tenders:'العطاءات المطروحة',sec_layers:'طبقات البيانات',lyr_roads:'مشاريع الطرق',lyr_housing:'مشاريع الإسكان',lyr_water:'شبكات المياه والصرف',lyr_bridges:'الجسور والأنفاق',lyr_util:'الكهرباء والمرافق',lyr_tenders:'العطاءات النشطة',lyr_count:'مشروع',lyr_count_t:'عطاءات',sec_basemap:'الخريطة الأساسية',bm_streets:'الخرائط',bm_satellite:'الصور الجوية',bm_topo:'طبوغرافيا',bm_gray:'رمادي',sec_tools:'أدوات التحليل',tool_heat:'خريطة الكثافة',tool_export:'تصدير البيانات CSV',tool_3d:'تبديل العرض 3D / 2D',status_connected:'متصل بـ ArcGIS Online',status_coords:'إحداثيات الخريطة',status_layers:'طبقة نشطة',btn_libya:'ليبيا كاملة',btn_map:'الخريطة',btn_satellite:'صورة جوية',btn_topo:'طبوغرافيا',btn_3d:'ثلاثي الأبعاد',btn_wayback:'Wayback الصور التاريخية',btn_heat:'كثافة المشاريع',wayback_title:'Esri World Imagery Wayback — تتبع التطور الزمني',wayback_desc:'حرّك الشريط لمشاهدة تطور الموقع عبر السنوات',ptab_info:'معلومات',ptab_media:'الصور والوسائط',ptab_timeline:'الخطة الزمنية',search_ph:'بحث في المشروعات...',filter_all:'الكل',filter_done:'مكتمل',filter_ongoing:'جاري',filter_planned:'مخطط',pop_details:'عرض التفاصيل',lbl_city:'المدينة',lbl_type:'النوع',lbl_status:'الحالة',lbl_budget:'الميزانية',lbl_progress:'نسبة الإنجاز',lbl_start:'تاريخ البدء',lbl_end:'تاريخ الانتهاء',lbl_contractor:'المقاول',status_completed:'مكتمل',status_ongoing:'جاري التنفيذ',status_planned:'مخطط',type_ar_roads:'طرق',type_ar_housing:'إسكان',type_ar_water:'مياه',type_ar_bridges:'جسور',type_ar_utilities:'مرافق'},
+
+  en:{dir:'ltr',font:'Roboto',title:'Spatial GIS Portal',subtitle:'Housing & Utilities Projects Implementation Device — Libya',nav_dashboard:'Dashboard',nav_projects:'Projects',nav_tenders:'Tenders',nav_layers:'Layers',tab_stats:'Statistics',tab_proj:'Projects',tab_tend:'Tenders',tab_layers:'Layers',stat_total:'Total Projects',stat_done:'Completed',stat_ongoing:'In Progress',stat_planned:'Planned',sec_progress:'Completion by Category',type_roads:'Roads',type_housing:'Housing',type_utilities:'Utilities',type_water:'Water Networks',type_bridges:'Bridges',sec_source:'Data Source',meta_updated:'Last Updated',meta_source:'Source',meta_crs:'Coordinate System',sec_tenders:'Active Tenders',sec_layers:'Data Layers',lyr_roads:'Road Projects',lyr_housing:'Housing Projects',lyr_water:'Water & Sewage',lyr_bridges:'Bridges & Tunnels',lyr_util:'Electricity & Utilities',lyr_tenders:'Active Tenders',lyr_count:'projects',lyr_count_t:'tenders',sec_basemap:'Base Map',bm_streets:'Streets',bm_satellite:'Satellite',bm_topo:'Topographic',bm_gray:'Gray',sec_tools:'Analysis Tools',tool_heat:'Density Map',tool_export:'Export CSV',tool_3d:'Toggle 3D / 2D',status_connected:'Connected to ArcGIS Online',status_coords:'Map Coordinates',status_layers:'active layers',btn_libya:'All Libya',btn_map:'Map',btn_satellite:'Satellite',btn_topo:'Topographic',btn_3d:'3D View',btn_wayback:'Wayback Imagery',btn_heat:'Project Density',wayback_title:'Esri World Imagery Wayback — Track Progress Over Time',wayback_desc:'Drag slider to see site changes over the years',ptab_info:'Information',ptab_media:'Photos & Media',ptab_timeline:'Time Plan',search_ph:'Search projects...',filter_all:'All',filter_done:'Completed',filter_ongoing:'Ongoing',filter_planned:'Planned',pop_details:'View Details',lbl_city:'City',lbl_type:'Type',lbl_status:'Status',lbl_budget:'Budget',lbl_progress:'Progress',lbl_start:'Start Date',lbl_end:'End Date',lbl_contractor:'Contractor',status_completed:'Completed',status_ongoing:'In Progress',status_planned:'Planned',type_ar_roads:'Roads',type_ar_housing:'Housing',type_ar_water:'Water',type_ar_bridges:'Bridges',type_ar_utilities:'Utilities'},
+
+  fr:{dir:'ltr',font:'Roboto',title:'Portail SIG Spatial',subtitle:'Dispositif d\'exécution des projets de logement et services — Libye',nav_dashboard:'Tableau de bord',nav_projects:'Projets',nav_tenders:'Appels d\'offres',nav_layers:'Couches',tab_stats:'Statistiques',tab_proj:'Projets',tab_tend:'Appels d\'offres',tab_layers:'Couches',stat_total:'Total des projets',stat_done:'Achevés',stat_ongoing:'En cours',stat_planned:'Planifiés',sec_progress:'Avancement par catégorie',type_roads:'Routes',type_housing:'Logement',type_utilities:'Utilitaires',type_water:'Réseaux d\'eau',type_bridges:'Ponts',sec_source:'Source de données',meta_updated:'Dernière MàJ',meta_source:'Source',meta_crs:'Système de coordonnées',sec_tenders:'Appels d\'offres actifs',sec_layers:'Couches de données',lyr_roads:'Projets routiers',lyr_housing:'Projets de logement',lyr_water:'Eau & Assainissement',lyr_bridges:'Ponts & Tunnels',lyr_util:'Électricité & Services',lyr_tenders:'Appels d\'offres actifs',lyr_count:'projets',lyr_count_t:'appels',sec_basemap:'Fond de carte',bm_streets:'Rues',bm_satellite:'Satellite',bm_topo:'Topographie',bm_gray:'Gris',sec_tools:'Outils d\'analyse',tool_heat:'Carte de densité',tool_export:'Exporter CSV',tool_3d:'Basculer 3D / 2D',status_connected:'Connecté à ArcGIS Online',status_coords:'Coordonnées de la carte',status_layers:'couches actives',btn_libya:'Toute la Libye',btn_map:'Carte',btn_satellite:'Satellite',btn_topo:'Topographique',btn_3d:'Vue 3D',btn_wayback:'Images historiques Wayback',btn_heat:'Densité des projets',wayback_title:'Esri World Imagery Wayback — Suivi de l\'évolution',wayback_desc:'Faites glisser le curseur pour voir l\'évolution du site',ptab_info:'Informations',ptab_media:'Photos et Médias',ptab_timeline:'Plan de travail',search_ph:'Rechercher des projets...',filter_all:'Tous',filter_done:'Achevé',filter_ongoing:'En cours',filter_planned:'Planifié',pop_details:'Voir les détails',lbl_city:'Ville',lbl_type:'Type',lbl_status:'Statut',lbl_budget:'Budget',lbl_progress:'Avancement',lbl_start:'Date de début',lbl_end:'Date de fin',lbl_contractor:'Entrepreneur',status_completed:'Achevé',status_ongoing:'En cours',status_planned:'Planifié',type_ar_roads:'Routes',type_ar_housing:'Logement',type_ar_water:'Eau',type_ar_bridges:'Ponts',type_ar_utilities:'Services'},
+
+  it:{dir:'ltr',font:'Roboto',title:'Portale GIS Spaziale',subtitle:'Dispositivo per l\'esecuzione di progetti abitativi — Libia',nav_dashboard:'Dashboard',nav_projects:'Progetti',nav_tenders:'Gare d\'appalto',nav_layers:'Livelli',tab_stats:'Statistiche',tab_proj:'Progetti',tab_tend:'Gare',tab_layers:'Livelli',stat_total:'Totale progetti',stat_done:'Completati',stat_ongoing:'In corso',stat_planned:'Pianificati',sec_progress:'Completamento per categoria',type_roads:'Strade',type_housing:'Abitativo',type_utilities:'Servizi',type_water:'Reti idriche',type_bridges:'Ponti',sec_source:'Fonte dati',meta_updated:'Ultimo aggiornamento',meta_source:'Fonte',meta_crs:'Sistema di coordinate',sec_tenders:'Gare attive',sec_layers:'Livelli dati',lyr_roads:'Progetti stradali',lyr_housing:'Progetti abitativi',lyr_water:'Acqua & Fognature',lyr_bridges:'Ponti & Tunnel',lyr_util:'Elettricità & Servizi',lyr_tenders:'Gare attive',lyr_count:'progetti',lyr_count_t:'gare',sec_basemap:'Mappa base',bm_streets:'Strade',bm_satellite:'Satellite',bm_topo:'Topografica',bm_gray:'Grigio',sec_tools:'Strumenti di analisi',tool_heat:'Mappa densità',tool_export:'Esporta CSV',tool_3d:'Passa a 3D / 2D',status_connected:'Connesso ad ArcGIS Online',status_coords:'Coordinate mappa',status_layers:'livelli attivi',btn_libya:'Tutta la Libia',btn_map:'Mappa',btn_satellite:'Satellite',btn_topo:'Topografica',btn_3d:'Vista 3D',btn_wayback:'Immagini storiche Wayback',btn_heat:'Densità progetti',wayback_title:'Esri World Imagery Wayback — Monitoraggio nel tempo',wayback_desc:'Trascina il cursore per vedere i cambiamenti nel sito',ptab_info:'Informazioni',ptab_media:'Foto e Media',ptab_timeline:'Piano temporale',search_ph:'Cerca progetti...',filter_all:'Tutti',filter_done:'Completato',filter_ongoing:'In corso',filter_planned:'Pianificato',pop_details:'Visualizza dettagli',lbl_city:'Città',lbl_type:'Tipo',lbl_status:'Stato',lbl_budget:'Budget',lbl_progress:'Avanzamento',lbl_start:'Data inizio',lbl_end:'Data fine',lbl_contractor:'Appaltatore',status_completed:'Completato',status_ongoing:'In corso',status_planned:'Pianificato',type_ar_roads:'Strade',type_ar_housing:'Abitativo',type_ar_water:'Acqua',type_ar_bridges:'Ponti',type_ar_utilities:'Servizi'},
+
+  es:{dir:'ltr',font:'Roboto',title:'Portal GIS Espacial',subtitle:'Dispositivo de ejecución de proyectos de vivienda — Libia',nav_dashboard:'Panel',nav_projects:'Proyectos',nav_tenders:'Licitaciones',nav_layers:'Capas',tab_stats:'Estadísticas',tab_proj:'Proyectos',tab_tend:'Licitaciones',tab_layers:'Capas',stat_total:'Total de proyectos',stat_done:'Completados',stat_ongoing:'En progreso',stat_planned:'Planificados',sec_progress:'Avance por categoría',type_roads:'Carreteras',type_housing:'Vivienda',type_utilities:'Servicios',type_water:'Redes de agua',type_bridges:'Puentes',sec_source:'Fuente de datos',meta_updated:'Última actualización',meta_source:'Fuente',meta_crs:'Sistema de coordenadas',sec_tenders:'Licitaciones activas',sec_layers:'Capas de datos',lyr_roads:'Proyectos viales',lyr_housing:'Proyectos de vivienda',lyr_water:'Agua & Saneamiento',lyr_bridges:'Puentes & Túneles',lyr_util:'Electricidad & Servicios',lyr_tenders:'Licitaciones activas',lyr_count:'proyectos',lyr_count_t:'licitaciones',sec_basemap:'Mapa base',bm_streets:'Calles',bm_satellite:'Satélite',bm_topo:'Topográfico',bm_gray:'Gris',sec_tools:'Herramientas de análisis',tool_heat:'Mapa de densidad',tool_export:'Exportar CSV',tool_3d:'Alternar 3D / 2D',status_connected:'Conectado a ArcGIS Online',status_coords:'Coordenadas del mapa',status_layers:'capas activas',btn_libya:'Toda Libia',btn_map:'Mapa',btn_satellite:'Satélite',btn_topo:'Topográfico',btn_3d:'Vista 3D',btn_wayback:'Imágenes históricas Wayback',btn_heat:'Densidad de proyectos',wayback_title:'Esri World Imagery Wayback — Seguimiento del progreso',wayback_desc:'Arrastra el control para ver cambios a lo largo del tiempo',ptab_info:'Información',ptab_media:'Fotos y Medios',ptab_timeline:'Plan de trabajo',search_ph:'Buscar proyectos...',filter_all:'Todos',filter_done:'Completado',filter_ongoing:'En curso',filter_planned:'Planificado',pop_details:'Ver detalles',lbl_city:'Ciudad',lbl_type:'Tipo',lbl_status:'Estado',lbl_budget:'Presupuesto',lbl_progress:'Avance',lbl_start:'Fecha inicio',lbl_end:'Fecha fin',lbl_contractor:'Contratista',status_completed:'Completado',status_ongoing:'En progreso',status_planned:'Planificado',type_ar_roads:'Carreteras',type_ar_housing:'Vivienda',type_ar_water:'Agua',type_ar_bridges:'Puentes',type_ar_utilities:'Servicios'}
+};
+let lang = 'ar';
+
+function t(key){ return (T[lang]&&T[lang][key]) || (T['ar'][key]) || key; }
+
+function setLanguage(l){
+  lang = l;
+  const isRTL = T[l].dir === 'rtl';
+  document.getElementById('html-root').lang = l;
+  document.getElementById('html-root').dir = T[l].dir;
+  const body = document.getElementById('body-root');
+  body.dir = T[l].dir;
+  body.classList.toggle('ltr', !isRTL);
+  // Update all i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  // Re-render dynamic lists
+  renderProjects();
+  renderTenders();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PROJECT DATA (35 projects)
+// ══════════════════════════════════════════════════════════════════════════
+const PROJECTS = [
+  {id:1, name:'مشروع رصف طريق مداخل حي السلام والمؤدية',city:'طرابلس',lat:32.88,lng:13.19,type:'roads',status:'completed',budget:'2.4 م.د',progress:100,start:'2021-03-01',end:'2022-06-30',contractor:'شركة التنمية الوطنية',images:['https://hib.ly/wp-content/uploads/2023/06/336898961_911919316625127_8657395653985700870_n-300x225.jpg'],video:'',timeline:[{date:'مارس 2021',title:'بدء المشروع',desc:'إسناد العقد والتحضير',done:true},{date:'يونيو 2021',title:'أعمال الحفر والتسوية',desc:'تسوية التربة وتمهيد الطريق',done:true},{date:'ديسمبر 2021',title:'طبقة الأساس',desc:'صب طبقة الأساس الإسفلتية',done:true},{date:'مارس 2022',title:'الطبقة النهائية',desc:'إنجاز الرصف النهائي',done:true},{date:'يونيو 2022',title:'التسليم',desc:'تسليم المشروع للبلدية',done:true}]},
+  {id:2, name:'مشروع تقاطع البيفي وإنشاء تحويرة للتقاطع',city:'طرابلس',lat:32.91,lng:13.22,type:'roads',status:'completed',budget:'5.1 م.د',progress:100,start:'2021-01-15',end:'2022-09-01',contractor:'شركة ليبيا للطرق',images:['https://hib.ly/wp-content/uploads/2023/06/323209811_707793854039133_7304700480888997581_n-300x290.jpg'],video:'',timeline:[{date:'يناير 2021',title:'بدء المشروع',desc:'تصميم هندسي وحصر كميات',done:true},{date:'مايو 2021',title:'أعمال الهدم',desc:'هدم وإزالة البنية القديمة',done:true},{date:'نوفمبر 2021',title:'البنية التحتية',desc:'أعمال الصرف والأساسات',done:true},{date:'مايو 2022',title:'الإنجاز',desc:'رصف وعلامات طريق',done:true}]},
+  {id:3, name:'مشروع المرافق المتكاملة الكويفية',city:'طرابلس',lat:32.85,lng:13.15,type:'water',status:'completed',budget:'8.3 م.د',progress:100,start:'2020-06-01',end:'2022-12-31',contractor:'الشركة الوطنية للإسكان',images:['https://hib.ly/wp-content/uploads/2023/06/328247819_524415829786064_696779801481513991_n-300x225.jpg'],video:'',timeline:[{date:'يونيو 2020',title:'بدء الأعمال',desc:'حفر الخنادق وتمديد الأنابيب',done:true},{date:'مارس 2021',title:'شبكة المياه',desc:'تركيب شبكة المياه الرئيسية',done:true},{date:'سبتمبر 2021',title:'شبكة الصرف',desc:'إنجاز شبكة الصرف الصحي',done:true},{date:'ديسمبر 2022',title:'التسليم النهائي',done:true}]},
+  {id:4, name:'مشروع رصف عدد (7) طرق داخل مخطط',city:'مصراتة',lat:32.38,lng:15.09,type:'roads',status:'ongoing',budget:'3.7 م.د',progress:72,start:'2023-01-01',end:'2025-06-30',contractor:'شركة المدار للإنشاء',images:['https://hib.ly/wp-content/uploads/2023/06/323558903_1306920893432630_2672557825752280900_n-300x290.jpg'],video:'',timeline:[{date:'يناير 2023',title:'البدء',desc:'تحضير الموقع',done:true},{date:'يونيو 2023',title:'طبقة الأساس',done:true},{date:'ديسمبر 2023',title:'50% منجز',done:true},{date:'يونيو 2024',title:'استمرار الأعمال',done:false},{date:'يونيو 2025',title:'التسليم المتوقع',done:false}]},
+  {id:5, name:'مشروع رصف (3) طرق داخل مخطط مصراتة',city:'مصراتة',lat:32.41,lng:15.12,type:'roads',status:'ongoing',budget:'2.1 م.د',progress:58,start:'2023-03-01',end:'2025-03-01',contractor:'شركة المدار للإنشاء',images:['https://hib.ly/wp-content/uploads/2023/06/333031685_1201237774090231_2256976163411178765_n-300x226.jpg'],video:'',timeline:[{date:'مارس 2023',title:'البدء',done:true},{date:'أكتوبر 2023',title:'أعمال طبقة الأساس',done:true},{date:'مارس 2024',title:'نسبة إنجاز 58%',done:false},{date:'مارس 2025',title:'التسليم',done:false}]},
+  {id:6, name:'مشروع تنفيذ جسر التلمات',city:'بني وليد',lat:31.77,lng:14.02,type:'bridges',status:'ongoing',budget:'12.5 م.د',progress:40,start:'2024-01-25',end:'2026-12-31',contractor:'شركة الجسور والأنفاق',images:[],video:'https://www.youtube.com/embed/dQw4w9WgXcQ',timeline:[{date:'يناير 2024',title:'توقيع العقد',done:true},{date:'مارس 2024',title:'أعمال المسح',done:true},{date:'يونيو 2024',title:'الحفريات والأساسات',done:false},{date:'يناير 2026',title:'هيكل الجسر',done:false},{date:'ديسمبر 2026',title:'التسليم',done:false}]},
+  {id:7, name:'مشروع تنفيذ جسر القطانشة',city:'بني وليد',lat:31.74,lng:14.05,type:'bridges',status:'ongoing',budget:'11.8 م.د',progress:35,start:'2024-01-25',end:'2026-12-31',contractor:'شركة الجسور والأنفاق',images:[],video:'',timeline:[{date:'يناير 2024',title:'توقيع العقد',done:true},{date:'أبريل 2024',title:'أعمال المسح والدراسة',done:true},{date:'أغسطس 2024',title:'الحفريات',done:false},{date:'يناير 2026',title:'البناء الرئيسي',done:false},{date:'ديسمبر 2026',title:'التسليم',done:false}]},
+  {id:8, name:'مشروع صيانة جسر وادي البلاد',city:'بني وليد',lat:31.72,lng:14.08,type:'bridges',status:'planned',budget:'4.2 م.د',progress:0,start:'2026-01-01',end:'2027-06-30',contractor:'لم يحدد',images:[],video:'',timeline:[{date:'يناير 2026',title:'طرح العطاء',done:false},{date:'مارس 2026',title:'توقيع العقد',done:false},{date:'يونيو 2026',title:'بدء الأعمال',done:false},{date:'يونيو 2027',title:'التسليم',done:false}]},
+  {id:9, name:'مشروع تعبيد طرق محلة الشفارة — 3800م',city:'الأصابعة',lat:32.62,lng:13.41,type:'roads',status:'ongoing',budget:'6.8 م.د',progress:25,start:'2025-04-05',end:'2026-12-31',contractor:'تحت الإسناد',images:[],video:'',timeline:[{date:'أبريل 2025',title:'طرح العطاء',done:true},{date:'يونيو 2025',title:'توقيع العقد',done:true},{date:'سبتمبر 2025',title:'بدء الأعمال',done:false},{date:'ديسمبر 2026',title:'التسليم',done:false}]},
+  {id:10, name:'شبكة الصرف الصحي زليتن — معالجة المياه الجوفية',city:'زليتن',lat:32.47,lng:14.57,type:'water',status:'ongoing',budget:'15.0 م.د',progress:60,start:'2023-06-01',end:'2025-12-31',contractor:'شركة المياه والصرف',images:[],video:'',timeline:[{date:'يونيو 2023',title:'بدء المشروع',done:true},{date:'يناير 2024',title:'تركيب المضخات',done:true},{date:'يونيو 2024',title:'شبكة الأنابيب الرئيسية',done:true},{date:'يناير 2025',title:'60% منجز',done:false},{date:'ديسمبر 2025',title:'التسليم',done:false}]},
+  {id:11, name:'مشروع مداخل ومخارج السريع — محلة الغرارات',city:'طرابلس',lat:32.93,lng:13.26,type:'roads',status:'completed',budget:'3.3 م.د',progress:100,start:'2021-05-01',end:'2022-11-30',contractor:'شركة التنمية',images:[],video:'',timeline:[{date:'مايو 2021',title:'البدء',done:true},{date:'ديسمبر 2021',title:'إنجاز 70%',done:true},{date:'نوفمبر 2022',title:'التسليم',done:true}]},
+  {id:12, name:'مشروع إسكان جنوب بنغازي — 500 وحدة',city:'بنغازي',lat:32.11,lng:20.07,type:'housing',status:'ongoing',budget:'45.0 م.د',progress:30,start:'2023-09-01',end:'2027-06-30',contractor:'شركة التنمية للإسكان',images:[],video:'',timeline:[{date:'سبتمبر 2023',title:'وضع حجر الأساس',done:true},{date:'مارس 2024',title:'البنية التحتية',done:true},{date:'سبتمبر 2024',title:'الطوابق الأرضية',done:false},{date:'يونيو 2027',title:'التسليم',done:false}]},
+  {id:13, name:'مشروع شبكة مياه سبها الكبرى',city:'سبها',lat:27.04,lng:14.43,type:'water',status:'planned',budget:'18.0 م.د',progress:0,start:'2026-03-01',end:'2028-03-01',contractor:'لم يحدد',images:[],video:'',timeline:[{date:'مارس 2026',title:'طرح العطاء',done:false},{date:'يونيو 2026',title:'توقيع العقد',done:false},{date:'سبتمبر 2026',title:'بدء الأعمال',done:false},{date:'مارس 2028',title:'التسليم',done:false}]},
+  {id:14, name:'مشروع إسكان الخمس السكني — 300 وحدة',city:'الخمس',lat:32.65,lng:14.27,type:'housing',status:'completed',budget:'22.0 م.د',progress:100,start:'2019-01-01',end:'2022-12-31',contractor:'الشركة الوطنية',images:[],video:'',timeline:[{date:'يناير 2019',title:'البدء',done:true},{date:'يونيو 2020',title:'الهيكل الإنشائي',done:true},{date:'يناير 2022',title:'التشطيبات',done:true},{date:'ديسمبر 2022',title:'التسليم',done:true}]},
+  {id:15, name:'مشروع الكهرباء والإنارة — الزاوية',city:'الزاوية',lat:32.76,lng:12.73,type:'utilities',status:'ongoing',budget:'9.5 م.د',progress:45,start:'2023-11-01',end:'2025-11-30',contractor:'شركة الكهرباء الوطنية',images:[],video:'',timeline:[{date:'نوفمبر 2023',title:'البدء',done:true},{date:'مايو 2024',title:'تمديد الكابلات',done:true},{date:'نوفمبر 2024',title:'45% منجز',done:false},{date:'نوفمبر 2025',title:'التسليم',done:false}]},
+  {id:16, name:'مشروع طريق طرابلس — مصراتة الساحلي',city:'مصراتة',lat:32.55,lng:14.0,type:'roads',status:'planned',budget:'38.0 م.د',progress:0,start:'2026-06-01',end:'2029-06-01',contractor:'لم يحدد',images:[],video:'',timeline:[{date:'يونيو 2026',title:'دراسة الجدوى',done:false},{date:'يناير 2027',title:'التصميم الهندسي',done:false},{date:'يونيو 2027',title:'بدء التنفيذ',done:false},{date:'يونيو 2029',title:'التسليم',done:false}]},
+  {id:17, name:'مشروع إسكان شعبي درنة — 200 وحدة',city:'درنة',lat:32.77,lng:22.64,type:'housing',status:'ongoing',budget:'19.0 م.د',progress:55,start:'2023-01-01',end:'2025-06-30',contractor:'شركة إعادة الإعمار',images:[],video:'',timeline:[{date:'يناير 2023',title:'البدء',done:true},{date:'يوليو 2023',title:'الأساسات',done:true},{date:'يناير 2024',title:'الهيكل الإنشائي',done:true},{date:'يونيو 2025',title:'التسليم',done:false}]},
+  {id:18, name:'مشروع تطوير الطرق الداخلية — غريان',city:'غريان',lat:32.17,lng:13.01,type:'roads',status:'completed',budget:'4.5 م.د',progress:100,start:'2022-01-01',end:'2023-12-31',contractor:'شركة الجبل',images:[],video:'',timeline:[{date:'يناير 2022',title:'البدء',done:true},{date:'ديسمبر 2022',title:'50% منجز',done:true},{date:'ديسمبر 2023',title:'التسليم',done:true}]},
+  {id:19, name:'مشروع شبكة الصرف الصحي طبرق',city:'طبرق',lat:32.08,lng:23.98,type:'water',status:'ongoing',budget:'12.0 م.د',progress:35,start:'2024-03-01',end:'2026-09-30',contractor:'شركة المياه والبيئة',images:[],video:'',timeline:[{date:'مارس 2024',title:'البدء',done:true},{date:'سبتمبر 2024',title:'الحفريات الرئيسية',done:false},{date:'مارس 2026',title:'تركيب الشبكة',done:false},{date:'سبتمبر 2026',title:'التسليم',done:false}]},
+  {id:20, name:'مشروع إسكان الهضبة الخضراء طرابلس',city:'طرابلس',lat:32.83,lng:13.07,type:'housing',status:'ongoing',budget:'55.0 م.د',progress:20,start:'2024-09-01',end:'2028-09-01',contractor:'شركة التنمية العمرانية',images:[],video:'',timeline:[{date:'سبتمبر 2024',title:'طرح العطاء',done:true},{date:'يناير 2025',title:'توقيع العقد',done:true},{date:'مارس 2025',title:'بدء الأساسات',done:false},{date:'سبتمبر 2028',title:'التسليم',done:false}]},
+  {id:21, name:'مشروع طريق الكورنيش — طبرق',city:'طبرق',lat:32.09,lng:23.97,type:'roads',status:'completed',budget:'7.2 م.د',progress:100,start:'2020-03-01',end:'2022-03-31',contractor:'شركة الشاطئ',images:[],video:'',timeline:[{date:'مارس 2020',title:'البدء',done:true},{date:'مارس 2021',title:'50%',done:true},{date:'مارس 2022',title:'التسليم',done:true}]},
+  {id:22, name:'مشروع جسر وادي كعام',city:'مصراتة',lat:32.34,lng:15.18,type:'bridges',status:'completed',budget:'8.9 م.د',progress:100,start:'2019-06-01',end:'2021-12-31',contractor:'شركة الجسور',images:[],video:'',timeline:[{date:'يونيو 2019',title:'البدء',done:true},{date:'يونيو 2020',title:'الأساسات',done:true},{date:'ديسمبر 2020',title:'الهيكل',done:true},{date:'ديسمبر 2021',title:'التسليم',done:true}]},
+  {id:23, name:'مشروع محطة ضخ المياه — ترهونة',city:'ترهونة',lat:32.11,lng:13.64,type:'water',status:'ongoing',budget:'6.5 م.د',progress:70,start:'2023-04-01',end:'2025-04-30',contractor:'شركة المياه',images:[],video:'',timeline:[{date:'أبريل 2023',title:'البدء',done:true},{date:'أكتوبر 2023',title:'البنية التحتية',done:true},{date:'أبريل 2024',title:'70% منجز',done:true},{date:'أبريل 2025',title:'التسليم',done:false}]},
+  {id:24, name:'مشروع إنارة الطرق السريعة — ضواحي طرابلس',city:'طرابلس',lat:32.80,lng:13.30,type:'utilities',status:'completed',budget:'11.0 م.د',progress:100,start:'2021-09-01',end:'2023-03-31',contractor:'شركة الكهرباء',images:[],video:'',timeline:[{date:'سبتمبر 2021',title:'البدء',done:true},{date:'مارس 2022',title:'50%',done:true},{date:'مارس 2023',title:'التسليم',done:true}]},
+  {id:25, name:'مشروع طرق المنطقة الصناعية — مصراتة',city:'مصراتة',lat:32.47,lng:15.22,type:'roads',status:'ongoing',budget:'9.1 م.د',progress:65,start:'2023-07-01',end:'2025-07-31',contractor:'شركة الصناعة والطرق',images:[],video:'',timeline:[{date:'يوليو 2023',title:'البدء',done:true},{date:'يناير 2024',title:'المرحلة الأولى',done:true},{date:'يوليو 2024',title:'65% منجز',done:true},{date:'يوليو 2025',title:'التسليم',done:false}]},
+  {id:26, name:'مشروع إسكان عائلات درنة — إعادة الإعمار',city:'درنة',lat:32.75,lng:22.61,type:'housing',status:'ongoing',budget:'75.0 م.د',progress:15,start:'2024-01-01',end:'2027-12-31',contractor:'شركة إعادة الإعمار الليبية',images:[],video:'',timeline:[{date:'يناير 2024',title:'بدء المسح والتوثيق',done:true},{date:'يوليو 2024',title:'إعداد الخطة',done:true},{date:'يناير 2025',title:'بدء البناء',done:false},{date:'ديسمبر 2027',title:'التسليم',done:false}]},
+  {id:27, name:'مشروع صرف صحي — الجفرة',city:'الجفرة',lat:29.11,lng:15.98,type:'water',status:'planned',budget:'14.0 م.د',progress:0,start:'2026-09-01',end:'2029-03-01',contractor:'لم يحدد',images:[],video:'',timeline:[{date:'سبتمبر 2026',title:'طرح العطاء',done:false},{date:'يناير 2027',title:'بدء الأعمال',done:false},{date:'مارس 2029',title:'التسليم',done:false}]},
+  {id:28, name:'مشروع طريق غدامس — نالوت',city:'نالوت',lat:31.87,lng:10.98,type:'roads',status:'completed',budget:'16.0 م.د',progress:100,start:'2019-01-01',end:'2022-06-30',contractor:'شركة الطرق الصحراوية',images:[],video:'',timeline:[{date:'يناير 2019',title:'البدء',done:true},{date:'يناير 2021',title:'50%',done:true},{date:'يونيو 2022',title:'التسليم',done:true}]},
+  {id:29, name:'مشروع محطة كهرباء رأس لانوف',city:'رأس لانوف',lat:30.50,lng:18.57,type:'utilities',status:'ongoing',budget:'32.0 م.د',progress:50,start:'2023-01-01',end:'2026-06-30',contractor:'شركة الطاقة',images:[],video:'',timeline:[{date:'يناير 2023',title:'البدء',done:true},{date:'يوليو 2023',title:'المرحلة الأولى',done:true},{date:'يناير 2024',title:'50% منجز',done:true},{date:'يونيو 2026',title:'التسليم',done:false}]},
+  {id:30, name:'مشروع تطوير ميناء بنغازي — البنية التحتية',city:'بنغازي',lat:32.10,lng:20.10,type:'utilities',status:'ongoing',budget:'28.0 م.د',progress:40,start:'2024-06-01',end:'2027-06-30',contractor:'شركة الموانئ',images:[],video:'',timeline:[{date:'يونيو 2024',title:'البدء',done:true},{date:'ديسمبر 2024',title:'المرحلة الأولى',done:false},{date:'يونيو 2027',title:'التسليم',done:false}]},
+  {id:31, name:'مشروع رصف طرق مدينة مرزق',city:'مرزق',lat:25.91,lng:13.93,type:'roads',status:'ongoing',budget:'5.5 م.د',progress:30,start:'2024-09-01',end:'2026-09-30',contractor:'شركة الجنوب',images:[],video:'',timeline:[{date:'سبتمبر 2024',title:'البدء',done:true},{date:'مارس 2025',title:'30% منجز',done:true},{date:'سبتمبر 2026',title:'التسليم',done:false}]},
+  {id:32, name:'مشروع جسر وادي النيل — أوباري',city:'أوباري',lat:26.58,lng:12.77,type:'bridges',status:'planned',budget:'9.0 م.د',progress:0,start:'2026-06-01',end:'2028-12-31',contractor:'لم يحدد',images:[],video:'',timeline:[{date:'يونيو 2026',title:'طرح العطاء',done:false},{date:'ديسمبر 2026',title:'بدء الأعمال',done:false},{date:'ديسمبر 2028',title:'التسليم',done:false}]},
+  {id:33, name:'مشروع شبكة الإنارة — مدينة هون',city:'هون',lat:29.13,lng:15.95,type:'utilities',status:'completed',budget:'3.8 م.د',progress:100,start:'2022-01-01',end:'2023-06-30',contractor:'شركة الطاقة الوطنية',images:[],video:'',timeline:[{date:'يناير 2022',title:'البدء',done:true},{date:'يونيو 2023',title:'التسليم',done:true}]},
+  {id:34, name:'مشروع إسكان عمال النفط — رأس لانوف',city:'رأس لانوف',lat:30.48,lng:18.60,type:'housing',status:'ongoing',budget:'35.0 م.د',progress:25,start:'2024-03-01',end:'2027-03-31',contractor:'شركة النفط والإسكان',images:[],video:'',timeline:[{date:'مارس 2024',title:'وضع حجر الأساس',done:true},{date:'سبتمبر 2024',title:'الأساسات',done:false},{date:'مارس 2027',title:'التسليم',done:false}]},
+  {id:35, name:'مشروع تطوير البنية التحتية — طمزين',city:'طمزين',lat:30.35,lng:16.17,type:'water',status:'planned',budget:'8.5 م.د',progress:0,start:'2026-09-01',end:'2028-06-30',contractor:'لم يحدد',images:[],video:'',timeline:[{date:'سبتمبر 2026',title:'طرح العطاء',done:false},{date:'مارس 2027',title:'بدء الأعمال',done:false},{date:'يونيو 2028',title:'التسليم',done:false}]},
+
+  // ════ JANZUR / GANZOUR — v2 (من ملفات AutoCAD المرفقة) ════
+  {
+    id:36,
+    name:'مشروع شبكة الصرف الصحي جنزور — المرحلة الأولى (محطات الضخ وخطوط الطرد)',
+    city:'جنزور', lat:32.869, lng:13.102,
+    type:'water', status:'ongoing', budget:'28.5 م.د', progress:55,
+    start:'2022-06-01', end:'2025-12-31',
+    contractor:'شركة التنمية الوطنية للإنشاءات',
+    images:[], video:'',
+    description:'يشمل إنشاء محطات رفع الصرف الصحي وخطوط الطرد الرئيسية في منطقة جنزور. يتضمن تمديد شبكة أنابيب بأطوال تجاوزت 12 كم وإنشاء 4 محطات ضخ رئيسية.',
+    files:[
+      {name:'fainal janzur — مرحلة أولى — وضع قائم محطات خطوط طرد.dwg', type:'dwg', size:'4.2 MB'},
+      {name:'GANZUR MASTER PLAN + ArcGIS.dwg', type:'dwg', size:'8.1 MB'},
+    ],
+    timeline:[
+      {date:'يونيو 2022',   title:'الدراسة والتصميم الهندسي',            desc:'إعداد المخططات التفصيلية وحصر الكميات',        done:true},
+      {date:'يناير 2023',   title:'طرح العطاء وإسناد العقد',             desc:'توقيع عقد التنفيذ مع المقاول',                 done:true},
+      {date:'أبريل 2023',   title:'أعمال الحفر والتربة',                 desc:'حفر الخنادق وتجهيز قاع الأنابيب',             done:true},
+      {date:'أكتوبر 2023',  title:'تمديد خطوط الطرد الرئيسية',          desc:'تركيب أنابيب HDPE قطر 400–800mm',             done:true},
+      {date:'مارس 2024',    title:'إنشاء محطتي الضخ (1 و2)',            desc:'الأعمال الإنشائية للمحطتين الأولى والثانية',   done:true},
+      {date:'سبتمبر 2024',  title:'إنشاء محطتي الضخ (3 و4)',            desc:'الأعمال الإنشائية للمحطتين الثالثة والرابعة',  done:false},
+      {date:'مارس 2025',    title:'تركيب المضخات والتجهيزات الكهربائية', desc:'تركيب المضخات الغاطسة ولوحات التحكم',         done:false},
+      {date:'سبتمبر 2025',  title:'الاختبارات والتشغيل التجريبي',        desc:'اختبارات ضغط الأنابيب وتشغيل المضخات',        done:false},
+      {date:'ديسمبر 2025',  title:'التسليم النهائي',                     desc:'تسليم المشروع لشركة الخدمات العامة طرابلس',    done:false},
+    ]
+  },
+
+  {
+    id:37,
+    name:'المخطط الرئيسي لمرافق جنزور — المرحلة الرابعة',
+    city:'جنزور', lat:32.876, lng:13.088,
+    type:'water', status:'planned', budget:'45.0 م.د', progress:8,
+    start:'2025-06-01', end:'2029-06-30',
+    contractor:'تحت الدراسة',
+    images:[], video:'',
+    description:'المرحلة الرابعة والأخيرة من المخطط الرئيسي الشامل، تغطي توسعة الشبكة للمناطق الجديدة غرب طرابلس وربطها بمحطة المعالجة المركزية مع إنشاء خزانات موازنة.',
+    files:[
+      {name:'Figure 1.2 Master plan stage -4.dwg', type:'dwg', size:'6.8 MB'},
+      {name:'GANZUR MASTER PLAN + ArcGIS.dwg',     type:'dwg', size:'8.1 MB'},
+    ],
+    timeline:[
+      {date:'يونيو 2025',   title:'مراجعة وإقرار المخطط الرئيسي', desc:'مراجعة نهائية للتصاميم من قبل الاستشاري',done:true},
+      {date:'ديسمبر 2025',  title:'طرح عطاء التنفيذ',             desc:'إعداد وثائق العطاء وطرحها',            done:false},
+      {date:'مارس 2026',    title:'توقيع العقد',                  desc:'إسناد العقد للمقاول المنفذ',           done:false},
+      {date:'يوليو 2026',   title:'بدء أعمال البنية التحتية',     desc:'الحفر وتمديد الشبكة الرئيسية',        done:false},
+      {date:'يناير 2028',   title:'ربط الشبكة بمحطة المعالجة',   desc:'توصيل خطوط الطرد بالمحطة المركزية',   done:false},
+      {date:'يونيو 2029',   title:'التسليم النهائي',              desc:'إنجاز وتسليم المرحلة الرابعة كاملة',  done:false},
+    ]
+  },
+
+  {
+    id:38,
+    name:'رقمنة منظومة مرافق جنزور — تكامل AutoCAD مع ArcGIS Online',
+    city:'جنزور', lat:32.862, lng:13.095,
+    type:'water', status:'ongoing', budget:'12.0 م.د', progress:70,
+    start:'2023-01-01', end:'2025-06-30',
+    contractor:'شركة التنمية للإسكان والمرافق',
+    images:[], video:'',
+    description:'مشروع رقمنة وتحويل مخططات AutoCAD الهندسية الكاملة لمنظومة مرافق جنزور إلى طبقات GIS تفاعلية على ArcGIS Online، يتيح إدارة الأصول ومراقبة الشبكة ودعم القرار في الوقت الفعلي.',
+    files:[
+      {name:'GANZUR MASTER PLAN + ArcGIS.dwg',                            type:'dwg', size:'8.1 MB'},
+      {name:'fainal janzur — مرحلة أولى — وضع قائم محطات خطوط طرد.dwg', type:'dwg', size:'4.2 MB'},
+      {name:'Figure 1.2 Master plan stage -4.dwg',                         type:'dwg', size:'6.8 MB'},
+    ],
+    timeline:[
+      {date:'يناير 2023',  title:'جمع وتوحيد مخططات AutoCAD',       desc:'تجميع جميع ملفات DWG من الاستشاريين', done:true},
+      {date:'أبريل 2023',  title:'تحويل DWG إلى Feature Layers',     desc:'رفع ملفات CAD إلى ArcGIS Online',     done:true},
+      {date:'أغسطس 2023',  title:'ربط السمات الوصفية بالطبقات',     desc:'إضافة بيانات المواصفات والأقطار والمواد',done:true},
+      {date:'يناير 2024',  title:'إنشاء خريطة الشبكة التفاعلية',   desc:'WebMap يعرض كامل شبكة جنزور',         done:true},
+      {date:'يونيو 2024',  title:'لوحة مراقبة أصول الشبكة',        desc:'ArcGIS Dashboard لمتابعة حالة الشبكة', done:true},
+      {date:'ديسمبر 2024', title:'تدريب فريق التشغيل والصيانة',     desc:'تدريب موظفي الجهاز على ArcGIS Online', done:false},
+      {date:'يونيو 2025',  title:'التسليم والتشغيل الكامل',         desc:'تسليم منظومة GIS لفريق الجهاز',       done:false},
+    ]
+  },
+];
+
+const TENDERS = [
+  {
+    id:1,
+    name:'مشروع تعبيد مجموعة طرق داخل محلة الشفارة بطول 3800م بمدينة الأصابعة',
+    date:'05/04/2025',deadline:'30/05/2025',
+    budget:'6,800,000',
+    location:'مدينة الأصابعة — منطقة الشفارة',
+    committee:'لجنة العطاءات الرئيسية',
+    brief:'يشمل المشروع تعبيد مجموعة من الطرق الداخلية داخل محلة الشفارة بمدينة الأصابعة بإجمالي طول 3800 متر، ويتضمن أعمال الحفر والتسوية وصب طبقة الأساس والطبقة الإسفلتية النهائية وأعمال الصرف السطحي والعلامات الإرشادية.',
+    requirements:'تصنيف مقاولات درجة ثانية فأعلى — خبرة سابقة في مشاريع مماثلة — ضمان ابتدائي 2٪',
+    contact:{name:'إدارة العطاءات — الجهاز',email:'tenders@hib.ly',phone:'092-3256732',address:'تاجوراء الوسط، طرابلس'},
+  },
+  {
+    id:2,
+    name:'مشروع تنفيذ جسر التلمات ببلدية بني وليد',
+    date:'25/01/2025',deadline:'28/02/2025',
+    budget:'12,500,000',
+    location:'بلدية بني وليد — وادي التلمات',
+    committee:'لجنة العطاءات الرئيسية',
+    brief:'تنفيذ جسر بطول 120 متر فوق وادي التلمات لربط الجانبين وتسهيل حركة المرور وفق المواصفات الفنية المعتمدة، ويشمل أعمال الأساسات والدعامات والسطح الإسفلتي والإضاءة والحواجز الأمنية.',
+    requirements:'تصنيف مقاولات درجة أولى — خبرة في الجسور — ضمان ابتدائي 3٪',
+    contact:{name:'إدارة العطاءات',email:'tenders@hib.ly',phone:'092-3256732',address:'تاجوراء الوسط، طرابلس'},
+  },
+  {
+    id:3,
+    name:'مشروع تنفيذ جسر القطانشة ببلدية بني وليد',
+    date:'25/01/2025',deadline:'28/02/2025',
+    budget:'11,800,000',
+    location:'بلدية بني وليد — منطقة القطانشة',
+    committee:'لجنة العطاءات الرئيسية',
+    brief:'تنفيذ جسر بطول 95 متر فوق وادي القطانشة، يهدف إلى ربط المجتمعات المنعزلة وتحسين الوصول للمناطق الزراعية، ويشمل الأعمال الإنشائية الكاملة من أساسات ودعامات وسطح جسر وعناصر السلامة.',
+    requirements:'تصنيف مقاولات درجة أولى — خبرة في الجسور — ضمان ابتدائي 3٪',
+    contact:{name:'إدارة العطاءات',email:'tenders@hib.ly',phone:'092-3256732',address:'تاجوراء الوسط، طرابلس'},
+  },
+  {
+    id:4,
+    name:'مشروع صيانة جسر وادي البلاد ببلدية بني وليد',
+    date:'25/01/2025',deadline:'15/03/2025',
+    budget:'4,200,000',
+    location:'بلدية بني وليد — وادي البلاد',
+    committee:'لجنة العطاءات الفرعية الأولى',
+    brief:'أعمال صيانة شاملة لجسر وادي البلاد تشمل إصلاح التشققات وتقوية الدعامات واستبدال حواجز السلامة وإعادة رصف السطح وأعمال الصرف والإضاءة، بهدف إعادة الجسر لكامل طاقته التشغيلية.',
+    requirements:'تصنيف مقاولات درجة ثانية فأعلى — خبرة في صيانة الجسور — ضمان ابتدائي 2٪',
+    contact:{name:'إدارة العطاءات',email:'tenders@hib.ly',phone:'092-3256732',address:'تاجوراء الوسط، طرابلس'},
+  },
+];
+
+const TYPE_COLORS = {roads:'#1e88e5',housing:'#2e7d32',water:'#e65100',bridges:'#f57f17',utilities:'#6a1b9a'};
+const TYPE_ICONS  = {roads:'fa-road',housing:'fa-building',water:'fa-water',bridges:'fa-bridge',utilities:'fa-bolt'};
+
+// ══════════════════════════════════════════════════════════════════════════
+// WAYBACK DATA (Esri World Imagery Wayback releases)
+// ══════════════════════════════════════════════════════════════════════════
+const WAYBACK_RELEASES = [
+  {year:'2014',release:'10'},
+  {year:'2016',release:'24'},
+  {year:'2017',release:'30'},
+  {year:'2018',release:'36'},
+  {year:'2019',release:'43'},
+  {year:'2021',release:'52'},
+  {year:'2023',release:'60'},
+  {year:'2024',release:'68'},
+];
+
+// ══════════════════════════════════════════════════════════════════════════
+// MAP INIT (Leaflet + ArcGIS/Esri tile services)
+// ══════════════════════════════════════════════════════════════════════════
+const map = L.map('map', {
+  zoomControl: false,
+  attributionControl: false   // removes Leaflet branding
+}).setView([28.5, 16.5], 5);
+
+L.control.zoom({position:'topleft'}).addTo(map);
+
+// ArcGIS Online basemap tiles (Esri services — no Leaflet attribution)
+const TILES = {
+  streets:   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),
+  topo:      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),
+  gray:      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16}),
+};
+TILES.streets.addTo(map);
+let currentBasemap = 'streets';
+
+// Wayback tile layer
+let waybackLayer = null;
+
+// Coordinate display
+map.on('mousemove', e => {
+  const lat = e.latlng.lat.toFixed(4), lng = e.latlng.lng.toFixed(4);
+  document.getElementById('coord-display').innerHTML = `<i class="fa fa-map-pin"></i> ${lat}° , ${lng}°`;
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// MARKERS
+// ══════════════════════════════════════════════════════════════════════════
+const layerGroups = {roads:L.layerGroup(),housing:L.layerGroup(),water:L.layerGroup(),bridges:L.layerGroup(),utilities:L.layerGroup(),tenders:L.layerGroup()};
+['roads','housing','water','bridges'].forEach(k => layerGroups[k].addTo(map));
+
+function makeIcon(type, status) {
+  const color = TYPE_COLORS[type]||'#1e88e5';
+  const icon  = TYPE_ICONS[type]||'fa-map-marker';
+  const opacity = status==='planned' ? '0.55' : '1';
+  return L.divIcon({
+    html:`<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};opacity:${opacity};display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.35)"><i class="fa ${icon}" style="transform:rotate(45deg);color:#fff;font-size:12px"></i></div>`,
+    iconSize:[30,30],iconAnchor:[15,30],popupAnchor:[0,-32],className:''
+  });
+}
+
+PROJECTS.forEach(p => {
+  const marker = L.marker([p.lat,p.lng],{icon:makeIcon(p.type,p.status)});
+  const statusKey = p.status==='completed'?'status_completed':p.status==='ongoing'?'status_ongoing':'status_planned';
+  const statusColor = p.status==='completed'?'#2e7d32':p.status==='ongoing'?'#f57f17':'#607d8b';
+  marker.bindPopup(`<div dir="rtl"><div class="lf-popup-title">${p.name}</div><div class="lf-popup-row">📍 ${p.city} &nbsp;|&nbsp; ${p.budget}</div><div class="lf-popup-row" style="margin-bottom:4px"><span style="display:inline-block;width:${p.progress}%;height:5px;background:${statusColor};border-radius:3px;vertical-align:middle;max-width:160px"></span> ${p.progress}%</div><button class="lf-popup-btn" onclick="openModal(${p.id})" data-i18n="pop_details">${t('pop_details')}</button></div>`,{maxWidth:260});
+  layerGroups[p.type].addLayer(marker);
+  p._marker = marker;
+});
+
+let is3D = false;
+
+// ══════════════════════════════════════════════════════════════════════════
+// NAV TOOLBAR TOOLS
+// ══════════════════════════════════════════════════════════════════════════
+let activeTool = 'pan';
+let measurePoints = [], measureLine = null, measureMarkers = [];
+let extentHistory = [], extentPointer = -1;
+
+// Track extent history
+map.on('moveend', () => {
+  const c = map.getCenter(), z = map.getZoom();
+  const curr = {lat:c.lat, lng:c.lng, zoom:z};
+  if(extentHistory.length === 0 || extentPointer < 0 ||
+     Math.abs(extentHistory[extentPointer].lat - curr.lat) > 0.001 ||
+     Math.abs(extentHistory[extentPointer].lng - curr.lng) > 0.001) {
+    extentHistory = extentHistory.slice(0, extentPointer + 1);
+    extentHistory.push(curr);
+    if(extentHistory.length > 20) extentHistory.shift();
+    extentPointer = extentHistory.length - 1;
+  }
+});
+
+function goToPrevExtent(){
+  if(extentPointer > 0){
+    extentPointer--;
+    const e = extentHistory[extentPointer];
+    map.setView([e.lat, e.lng], e.zoom, {animate:true});
+  }
+}
+
+function setActiveTool(tool, btn){
+  // Stop any running tool first
+  if(activeTool === 'measure' && tool !== 'measure') stopMeasure();
+  if(activeTool === 'identify' && tool !== 'identify') closeToolPanel('panel-identify-results');
+
+  activeTool = tool;
+  document.querySelectorAll('.ntb-btn').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+
+  const mapEl = document.getElementById('map');
+  map.dragging.enable();
+  map.scrollWheelZoom.enable();
+
+  if(tool === 'pan'){
+    mapEl.style.cursor = '';
+    closeToolPanel('panel-identify-results');
+    closeToolPanel('panel-measure');
+  } else if(tool === 'identify'){
+    mapEl.style.cursor = 'help';
+    openToolPanel('panel-identify-results');
+    document.getElementById('identify-results-body').innerHTML =
+      '<div style="text-align:center;color:var(--muted);font-size:12px;padding:14px">انقر على الخريطة لتعريف المعالم</div>';
+  } else if(tool === 'measure'){
+    mapEl.style.cursor = 'crosshair';
+    openToolPanel('panel-measure');
+    measurePoints = [];
+    measureMarkers.forEach(m=>map.removeLayer(m));
+    measureMarkers = [];
+    if(measureLine){ map.removeLayer(measureLine); measureLine = null; }
+    const res = document.getElementById('measure-result');
+    if(res){ res.style.display='none'; res.textContent=''; }
+  } else if(tool === 'select'){
+    mapEl.style.cursor = 'crosshair';
+  }
+}
+
+function toggleToolPanel(id, btn){
+  const panel = document.getElementById(id);
+  const isOpen = panel.classList.contains('open');
+  // Close all panels first
+  document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.ntb-btn').forEach(b => {
+    if(!['tool-pan','tool-identify','tool-measure','tool-select'].includes(b.id)) b.classList.remove('active');
+  });
+  if(!isOpen){ panel.classList.add('open'); if(btn) btn.classList.add('active'); }
+}
+
+function openToolPanel(id){ document.getElementById(id).classList.add('open'); }
+function closeToolPanel(id){ document.getElementById(id).classList.remove('open'); }
+
+// Map click handler (identify / measure)
+map.on('click', function(e){
+  if(activeTool === 'identify') doIdentify(e);
+  if(activeTool === 'measure')  addMeasurePoint(e);
+});
+
+// ── IDENTIFY ──
+function doIdentify(e){
+  const radius = 0.15; // degrees
+  const nearby = PROJECTS.filter(p =>
+    Math.abs(p.lat - e.latlng.lat) < radius &&
+    Math.abs(p.lng - e.latlng.lng) < radius
+  ).slice(0, 6);
+  const body = document.getElementById('identify-results-body');
+  if(!nearby.length){
+    body.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:12px;padding:14px"><i class="fa fa-search" style="font-size:24px;display:block;margin-bottom:6px"></i>لا توجد معالم في هذه المنطقة</div>`;
+    return;
+  }
+  body.innerHTML = nearby.map(p => {
+    const statusColor = p.status==='completed'?'var(--green)':p.status==='ongoing'?'var(--yellow)':'var(--muted)';
+    const statusLabel = p.status==='completed'?'مكتمل':p.status==='ongoing'?'جاري':'مخطط';
+    return `<div class="identify-result" onclick="openModal(${p.id})">
+      <div class="identify-result-name">${p.name}</div>
+      <div class="identify-result-meta">
+        <span style="color:${statusColor}">● ${statusLabel}</span> &nbsp;|&nbsp;
+        ${p.city} &nbsp;|&nbsp; ${p.budget}
+        <div style="margin-top:3px;height:4px;background:#e0e0e0;border-radius:2px;overflow:hidden">
+          <div style="width:${p.progress}%;height:100%;background:${TYPE_COLORS[p.type]};border-radius:2px"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  openToolPanel('panel-identify-results');
+}
+
+// ── MEASURE ──
+function startMeasure(){ stopMeasure(); }
+function stopMeasure(){
+  activeTool = 'pan';
+  document.getElementById('map').style.cursor = 'grab';
+  if(measureLine) { map.removeLayer(measureLine); measureLine = null; }
+  measureMarkers.forEach(m => map.removeLayer(m));
+  measureMarkers = []; measurePoints = [];
+  const res = document.getElementById('measure-result');
+  if(res){ res.style.display='none'; res.textContent=''; }
+  const btn = document.getElementById('tool-pan');
+  document.querySelectorAll('.ntb-btn').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+
+function addMeasurePoint(e){
+  measurePoints.push(e.latlng);
+  const dot = L.circleMarker(e.latlng, {radius:6, color:'#1e88e5', fillColor:'#1e88e5', fillOpacity:1, weight:2}).addTo(map);
+  measureMarkers.push(dot);
+  if(measureLine) map.removeLayer(measureLine);
+  if(measurePoints.length > 1){
+    measureLine = L.polyline(measurePoints, {color:'#1e88e5', weight:2.5, dashArray:'6,4'}).addTo(map);
+    const dist = calcTotalDistance(measurePoints);
+    const res = document.getElementById('measure-result');
+    if(res){
+      res.style.display = 'block';
+      res.innerHTML = `<i class="fa fa-ruler"></i> المسافة الكلية: <strong>${dist >= 1000 ? (dist/1000).toFixed(2)+' كم' : dist.toFixed(0)+' م'}</strong>`;
+    }
+  }
+}
+
+map.on('dblclick', function(e){ if(activeTool==='measure'){ L.DomEvent.stop(e); stopMeasure(); } });
+
+function calcTotalDistance(pts){
+  let total = 0;
+  for(let i=1;i<pts.length;i++) total += pts[i-1].distanceTo(pts[i]);
+  return total;
+}
+
+// ── GO TO XY ──
+function gotoXY(){
+  const lat  = parseFloat(document.getElementById('goto-lat').value);
+  const lng  = parseFloat(document.getElementById('goto-lng').value);
+  const zoom = parseInt(document.getElementById('goto-zoom').value) || 12;
+  const result = document.getElementById('goto-result');
+  if(isNaN(lat)||isNaN(lng)){ result.textContent='⚠️ أدخل إحداثيات صحيحة'; result.style.color='var(--red)'; return; }
+  if(lat<-90||lat>90||lng<-180||lng>180){ result.textContent='⚠️ الإحداثيات خارج النطاق المسموح'; result.style.color='var(--red)'; return; }
+  map.flyTo([lat, lng], zoom, {animate:true, duration:1.2});
+  L.marker([lat,lng]).addTo(map).bindPopup(`📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`).openPopup();
+  result.textContent = `✓ تم الانتقال إلى (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+  result.style.color = 'var(--green)';
+}
+
+// ── BOOKMARKS ──
+const customBookmarks = [];
+function addBookmark(){
+  const nameEl = document.getElementById('bm-name');
+  const name = nameEl.value.trim();
+  if(!name) return;
+  const c = map.getCenter(), z = map.getZoom();
+  customBookmarks.push({name, lat:c.lat, lng:c.lng, zoom:z});
+  const list = document.getElementById('bookmarks-list');
+  const div = document.createElement('div');
+  div.className = 'bm-item';
+  div.innerHTML = `<i class="fa fa-star" style="color:var(--yellow)"></i> ${name}`;
+  div.onclick = () => flyTo(c.lat, c.lng, z);
+  list.appendChild(div);
+  nameEl.value = '';
+}
+
+function flyTo(lat, lng, zoom){ map.flyTo([lat, lng], zoom, {animate:true, duration:1.2}); }
+
+// ── BASEMAP GALLERY ──
+// Add extra basemaps
+TILES['dark']   = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16});
+TILES['ocean']  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:13});
+TILES['natgeo'] = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:16});
+TILES['hybrid'] = L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+
+function updateBmgActive(id){
+  document.querySelectorAll('.bmg-card').forEach(c => c.classList.remove('active'));
+  const el = document.getElementById(id);
+  if(el) el.classList.add('active');
+  // Also sync sidebar basemap cards
+  document.querySelectorAll('.basemap-card').forEach(c => c.classList.remove('active'));
+}
+
+// ── PRINT MAP ──
+function printMap(){ window.print(); }
+
+// ══════════════════════════════════════════════════════════════════════════
+// WAYBACK APP TOGGLE
+// ══════════════════════════════════════════════════════════════════════════
+let waybackAppOpen = false;
+function toggleWaybackApp(btn){
+  waybackAppOpen = !waybackAppOpen;
+  const mapEl    = document.getElementById('map');
+  const cesEl    = document.getElementById('cesium-container');
+  const appEl    = document.getElementById('wayback-app-container');
+  const iframe   = document.getElementById('wayback-app-iframe');
+  const toolbar  = document.querySelector('.map-toolbar');
+  const ntb      = document.getElementById('nav-toolbar');
+  const sidebar  = document.querySelector('.sidebar');
+
+  if(waybackAppOpen){
+    mapEl.style.display   = 'none';
+    cesEl.style.display   = 'none';
+    toolbar.style.display = 'none';
+    if(ntb) ntb.style.display = 'none';
+    sidebar.style.display = 'none';
+    appEl.style.display   = 'flex';
+    iframe.src = 'https://livingatlas.arcgis.com/wayback/#mapCenter=18.03082%2C27.28505%2C5&mode=explore&active=10842';
+    btn.innerHTML = '<i class="fa fa-times"></i> إغلاق متابعة المشروعات';
+  } else {
+    appEl.style.display   = 'none';
+    iframe.src            = 'about:blank';
+    mapEl.style.display   = 'block';
+    toolbar.style.display = 'flex';
+    if(ntb) ntb.style.display = 'flex';
+    sidebar.style.display = 'flex';
+    btn.innerHTML = '<i class="fa fa-satellite-dish"></i> متابعة المشروعات';
+    setMainNav(document.getElementById('btn-dashboard'));
+    if(is3D){ mapEl.style.display='none'; cesEl.style.display='flex'; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 3D — ArcGIS WebScene SDK (SceneView + WebScene item)
+// ══════════════════════════════════════════════════════════════════════════
+let arcgisSceneView = null;
+
+function toggle3D(){
+  is3D = !is3D;
+  const mapEl  = document.getElementById('map');
+  const cesEl  = document.getElementById('cesium-container');
+  const btn    = document.getElementById('btn-3d');
+  const tb     = document.querySelector('.map-toolbar');
+  const ntb    = document.getElementById('nav-toolbar');
+  const stb    = document.getElementById('scene-toolbar');
+  const b2d    = document.getElementById('btn-back-2d');
+  if(is3D){
+    mapEl.style.display = 'none';
+    cesEl.style.display = 'flex';
+    if(tb)  tb.style.display  = 'none';
+    if(ntb) ntb.style.display = 'none';
+    stb.style.display = 'flex';
+    b2d.style.display = 'flex';
+    btn.classList.add('active');
+    if(!arcgisSceneView) initArcGISScene();
+  } else {
+    cesEl.style.display = 'none';
+    mapEl.style.display = 'block';
+    if(tb)  tb.style.display  = 'flex';
+    if(ntb) ntb.style.display = 'flex';
+    stb.style.display = 'none';
+    b2d.style.display = 'none';
+    btn.classList.remove('active');
+  }
+}
+
+function initArcGISScene(){
+  require([
+    'esri/WebScene',
+    'esri/views/SceneView',
+    'esri/layers/GraphicsLayer',
+    'esri/Graphic',
+    'esri/geometry/Point',
+    'esri/widgets/Home',
+    'esri/widgets/NavigationToggle',
+    'esri/widgets/Zoom',
+    'esri/widgets/Compass',
+    'esri/widgets/Search',
+    'esri/widgets/LayerList',
+    'esri/widgets/ScaleBar',
+    'esri/widgets/BasemapToggle'
+  ], function(WebScene, SceneView, GraphicsLayer, Graphic, Point,
+              Home, NavigationToggle, Zoom, Compass,
+              Search, LayerList, ScaleBar, BasemapToggle){
+
+    // Load the exact WebScene from ArcGIS Online
+    const webscene = new WebScene({
+      portalItem: { id: '7f6ae34b6cf749cd86de9df23421d701' }
+    });
+
+    // GraphicsLayer for project markers
+    const glayer = new GraphicsLayer({ title: 'مشاريع جهاز الإسكان والمرافق', elevationInfo: { mode: 'relative-to-ground', offset: 50 } });
+    webscene.add(glayer);
+
+    arcgisSceneView = new SceneView({
+      container: 'cesium-container',
+      map: webscene,
+      // Camera matching the image: Tripoli perspective, ~65° tilt looking north
+      camera: {
+        position: { longitude: 13.18, latitude: 32.82, z: 3800 },
+        heading: 5,
+        tilt: 65
+      },
+      ui: { components: [] },
+      environment: {
+        atmosphere: { quality: 'high' },
+        lighting: { date: new Date(), directShadowsEnabled: true, ambientOcclusionEnabled: true }
+      },
+      popup: {
+        dockEnabled: true,
+        dockOptions: { position: 'bottom-left', breakpoint: false }
+      }
+    });
+
+    // ── Project markers ──
+    PROJECTS.forEach(p => {
+      const [r,g,b] = hexToRgb(TYPE_COLORS[p.type] || '#1e88e5');
+      glayer.add(new Graphic({
+        geometry: new Point({ longitude: p.lng, latitude: p.lat, z: 50 }),
+        symbol: {
+          type: 'point-3d',
+          symbolLayers: [
+            // Vertical pole
+            { type: 'object', resource: { primitive: 'cylinder' },
+              material: { color: [r,g,b,0.9] }, width: 30, depth: 30, height: 120 },
+            // Icon on top
+            { type: 'icon', size: 22,
+              resource: { primitive: 'circle' },
+              material: { color: [r,g,b,1] },
+              outline: { color: [255,255,255,1], size: 2 } }
+          ]
+        },
+        attributes: {
+          id: p.id, name: p.name, city: p.city,
+          status: p.status==='completed'?'مكتمل':p.status==='ongoing'?'جاري':'مخطط',
+          budget: p.budget, progress: p.progress + '%'
+        },
+        popupTemplate: {
+          title: '{name}',
+          content: `<div dir="rtl" style="font-family:Cairo,sans-serif;font-size:13px;line-height:1.8">
+            <b>📍 المدينة:</b> {city}<br>
+            <b>⚙️ الحالة:</b> {status}<br>
+            <b>💰 الميزانية:</b> {budget}<br>
+            <b>✅ الإنجاز:</b> {progress}
+          </div>`,
+          actions: [{ title: 'تفاصيل كاملة', id: 'open-detail', className: 'esri-icon-description' }]
+        }
+      }));
+    });
+
+    // Popup action → full modal
+    arcgisSceneView.popup.on('trigger-action', e => {
+      if(e.action.id === 'open-detail'){
+        openModal(arcgisSceneView.popup.selectedFeature.attributes.id);
+      }
+    });
+
+    // ── Widgets ──
+    arcgisSceneView.ui.add(new Zoom({view: arcgisSceneView}), 'top-left');
+    arcgisSceneView.ui.add(new Home({view: arcgisSceneView}), 'top-left');
+    const navToggle = new NavigationToggle({view: arcgisSceneView});
+    arcgisSceneView._navToggleWidget = navToggle;
+    arcgisSceneView.ui.add(navToggle, 'top-left');
+    arcgisSceneView.ui.add(new Compass({view: arcgisSceneView}), 'top-left');
+    scene3DSearchWidget = new Search({ view: arcgisSceneView });
+    arcgisSceneView.ui.add(scene3DSearchWidget, 'top-right');
+
+    scene3DLayerListWidget = new LayerList({ view: arcgisSceneView });
+    arcgisSceneView.ui.add(scene3DLayerListWidget, 'bottom-left');
+
+    arcgisSceneView.ui.add(new ScaleBar({view: arcgisSceneView, unit:'metric'}), 'bottom-left');
+    arcgisSceneView.ui.add(new BasemapToggle({view: arcgisSceneView, nextBasemap:'satellite'}), 'bottom-right');
+
+  });
+}
+
+function hexToRgb(hex){
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+
+// ── KPI MAP ACTIONS ──
+function kpiGoToMap(id){
+  const p = PROJECTS.find(x=>x.id===id);
+  if(!p) return;
+  // Close dashboard
+  toggleKpiDashboard(document.getElementById('btn-kpi'));
+  // Fly to project on 2D map
+  setTimeout(()=>{
+    map.setView([p.lat, p.lng], 12, {animate:true});
+    if(p._marker) p._marker.openPopup();
+  }, 300);
+}
+
+function kpiShowAttachments(id){
+  openModal(id);
+  setTimeout(()=>showPopupTab('media'), 100);
+}
+
+// ── 3D TOOLBAR FUNCTIONS ──
+let scene3DBasemapToggled = false;
+let scene3DDaylightWidget = null;
+let scene3DLayerListWidget = null;
+let scene3DSearchWidget = null;
+let scene3DNavMode = 'pan'; // 'pan' | 'rotate'
+
+function toggle3DPanRotate(btn){
+  if(!arcgisSceneView) return;
+  scene3DNavMode = scene3DNavMode === 'pan' ? 'rotate' : 'pan';
+  const icon = document.getElementById('stb-pan-rotate-icon');
+  if(scene3DNavMode === 'pan'){
+    icon.className = 'fa fa-hand-paper';
+    btn.title = 'وضع التحريك (انقر للتدوير) — Pan Mode';
+    btn.classList.remove('active');
+    // ArcGIS SceneView: default left-click = pan
+    arcgisSceneView.navigation = { gamepad: { enabled: false } };
+    arcgisSceneView.goTo(arcgisSceneView.camera); // no-op to refresh
+    arcgisSceneView.container.style.cursor = 'grab';
+  } else {
+    icon.className = 'fa fa-sync-alt';
+    btn.title = 'وضع التدوير (انقر للتحريك) — Rotate Mode';
+    btn.classList.add('active');
+    arcgisSceneView.container.style.cursor = 'crosshair';
+  }
+  // Use NavigationToggle widget layout if available
+  if(arcgisSceneView._navToggleWidget){
+    arcgisSceneView._navToggleWidget.layout = scene3DNavMode === 'rotate' ? 'rotate' : 'pan';
+  }
+}
+
+function scene3DZoom(dir){
+  if(!arcgisSceneView) return;
+  const cam = arcgisSceneView.camera.clone();
+  const factor = dir > 0 ? 0.5 : 2.0;
+  cam.position.z = Math.max(200, cam.position.z * factor);
+  arcgisSceneView.goTo(cam, { animate: true, speedFactor: 1.5 });
+}
+
+function scene3DHome(){
+  if(!arcgisSceneView) return;
+  arcgisSceneView.goTo({
+    position: { longitude: 13.18, latitude: 32.82, z: 3800 },
+    heading: 5, tilt: 65
+  }, { animate: true, speedFactor: 1 });
+}
+
+function scene3DTiltUp(){
+  if(!arcgisSceneView) return;
+  const cam = arcgisSceneView.camera.clone();
+  cam.tilt = Math.min(90, (cam.tilt || 65) - 10);
+  arcgisSceneView.goTo(cam, { animate: true });
+}
+
+function scene3DTiltDown(){
+  if(!arcgisSceneView) return;
+  const cam = arcgisSceneView.camera.clone();
+  cam.tilt = Math.max(0, (cam.tilt || 65) + 10);
+  arcgisSceneView.goTo(cam, { animate: true });
+}
+
+function scene3DTopView(){
+  if(!arcgisSceneView) return;
+  arcgisSceneView.goTo({ tilt: 0 }, { animate: true });
+}
+
+function scene3DNorth(){
+  if(!arcgisSceneView) return;
+  arcgisSceneView.goTo({ heading: 0 }, { animate: true });
+}
+
+function toggle3DLayerList(btn){
+  if(!arcgisSceneView) return;
+  if(scene3DLayerListWidget){
+    const visible = scene3DLayerListWidget.visible !== false;
+    scene3DLayerListWidget.visible = !visible;
+    btn.classList.toggle('active', !visible);
+  }
+}
+
+function toggle3DSearch(btn){
+  if(!arcgisSceneView) return;
+  if(scene3DSearchWidget){
+    const visible = scene3DSearchWidget.visible !== false;
+    scene3DSearchWidget.visible = !visible;
+    btn.classList.toggle('active', !visible);
+  }
+}
+
+function toggle3DDaylight(btn){
+  if(!arcgisSceneView) return;
+  require(['esri/widgets/Daylight'], function(Daylight){
+    if(!scene3DDaylightWidget){
+      scene3DDaylightWidget = new Daylight({ view: arcgisSceneView });
+      arcgisSceneView.ui.add(scene3DDaylightWidget, 'top-right');
+      btn.classList.add('active');
+    } else {
+      const v = scene3DDaylightWidget.visible !== false;
+      scene3DDaylightWidget.visible = !v;
+      btn.classList.toggle('active', !v);
+    }
+  });
+}
+
+function scene3DBasemap(){
+  if(!arcgisSceneView) return;
+  const current = arcgisSceneView.map.basemap.id || '';
+  arcgisSceneView.map.basemap = current === 'satellite' ? 'topo-vector' : 'satellite';
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// WAYBACK IMAGERY
+// ══════════════════════════════════════════════════════════════════════════
+let waybackOpen = false;
+
+function initWaybackSlider(){
+  const slider = document.getElementById('wayback-slider');
+  slider.max = WAYBACK_RELEASES.length - 1;
+  slider.value = WAYBACK_RELEASES.length - 1;
+  const labelsEl = document.getElementById('wayback-labels');
+  // Show first, middle, last
+  const first = WAYBACK_RELEASES[0].year;
+  const mid   = WAYBACK_RELEASES[Math.floor(WAYBACK_RELEASES.length/2)].year;
+  const last  = WAYBACK_RELEASES[WAYBACK_RELEASES.length-1].year;
+  labelsEl.innerHTML = `<span>${first}</span><span>${mid}</span><span>${last}</span>`;
+}
+initWaybackSlider();
+
+function toggleWayback(){
+  waybackOpen = !waybackOpen;
+  const panel = document.getElementById('wayback-panel');
+  const btn = document.getElementById('btn-wayback');
+  panel.classList.toggle('open', waybackOpen);
+  btn.classList.toggle('active', waybackOpen);
+  if(!waybackOpen && waybackLayer){
+    map.removeLayer(waybackLayer);
+    waybackLayer = null;
+  } else if(waybackOpen){
+    const idx = parseInt(document.getElementById('wayback-slider').value);
+    applyWayback(idx);
+  }
+}
+
+function changeWayback(idx){
+  const r = WAYBACK_RELEASES[idx];
+  document.getElementById('wayback-year-label').textContent = r.year;
+  applyWayback(idx);
+}
+
+function applyWayback(idx){
+  if(waybackLayer) map.removeLayer(waybackLayer);
+  const r = WAYBACK_RELEASES[idx];
+  waybackLayer = L.tileLayer(
+    `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/${r.release}/{z}/{y}/{x}`,
+    {maxZoom:18, opacity:1}
+  );
+  // Switch to satellite basemap context
+  map.removeLayer(TILES[currentBasemap]);
+  waybackLayer.addTo(map);
+  document.getElementById('wayback-year-label').textContent = r.year;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BASEMAP SWITCH
+// ══════════════════════════════════════════════════════════════════════════
+function switchBasemap(name){
+  if(waybackLayer){ map.removeLayer(waybackLayer); waybackLayer=null; waybackOpen=false; document.getElementById('wayback-panel').classList.remove('open'); }
+  map.removeLayer(TILES[currentBasemap]);
+  TILES[name].addTo(map).bringToBack();
+  currentBasemap = name;
+  document.querySelectorAll('.basemap-card').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.map-btn[id^="btn-"]').forEach(b=>b.classList.remove('active'));
+  const bm = document.getElementById('bm-'+name);
+  const btn = document.getElementById('btn-'+name);
+  if(bm) bm.classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+function resetView(){ map.setView([28.5,16.5],5,{animate:true}); }
+
+// ══════════════════════════════════════════════════════════════════════════
+// LAYER TOGGLE
+// ══════════════════════════════════════════════════════════════════════════
+let activeLayerCount = 4;
+function toggleLayer(name,visible){
+  if(visible){ layerGroups[name].addTo(map); activeLayerCount++; }
+  else { map.removeLayer(layerGroups[name]); activeLayerCount--; }
+  document.getElementById('active-layers-count').textContent = activeLayerCount;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// HEATMAP (density circles)
+// ══════════════════════════════════════════════════════════════════════════
+let heatCircles=[], heatOn=false;
+function toggleHeatmap(){
+  if(heatOn){ heatCircles.forEach(c=>map.removeLayer(c)); heatCircles=[]; heatOn=false; }
+  else {
+    PROJECTS.forEach(p=>{
+      const c = L.circle([p.lat,p.lng],{radius:80000,color:TYPE_COLORS[p.type],fillColor:TYPE_COLORS[p.type],fillOpacity:.1,weight:0}).addTo(map);
+      heatCircles.push(c);
+    });
+    heatOn=true;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// RENDER PROJECT LIST
+// ══════════════════════════════════════════════════════════════════════════
+let currentFilter='', currentSearch='';
+
+function renderProjects(){
+  const list = document.getElementById('project-list');
+  list.innerHTML = '';
+  const filtered = PROJECTS.filter(p=>
+    (!currentFilter || p.status===currentFilter) &&
+    (!currentSearch || p.name.includes(currentSearch) || p.city.includes(currentSearch))
+  );
+  if(!filtered.length){
+    list.innerHTML=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:12px">لا توجد نتائج</div>`;
+    return;
+  }
+  const typeAr = {roads:t('type_ar_roads'),housing:t('type_ar_housing'),water:t('type_ar_water'),bridges:t('type_ar_bridges'),utilities:t('type_ar_utilities')};
+  const statusLabel = {completed:t('filter_done'),ongoing:t('filter_ongoing'),planned:t('filter_planned')};
+  const badgeCls = {completed:'badge-green',ongoing:'badge-yellow',planned:'badge-gray'};
+  filtered.forEach(p=>{
+    const div = document.createElement('div');
+    div.className=`project-item ${p.status}`;
+    div.id=`proj-${p.id}`;
+    div.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+        <div class="project-name">${p.name}</div>
+        <span class="badge ${badgeCls[p.status]}" style="white-space:nowrap;flex-shrink:0">${statusLabel[p.status]}</span>
+      </div>
+      <div class="project-meta">
+        <span><i class="fa fa-map-marker-alt"></i> ${p.city}</span>
+        <span><i class="fa fa-tag"></i> ${typeAr[p.type]||p.type}</span>
+        <span><i class="fa fa-coins"></i> ${p.budget}</span>
+      </div>
+      <div style="margin-top:5px"><div style="height:4px;background:#e0e0e0;border-radius:3px;overflow:hidden"><div style="width:${p.progress}%;height:100%;background:${TYPE_COLORS[p.type]};border-radius:3px"></div></div></div>`;
+    div.addEventListener('click',()=>{
+      if(!is3D){ map.setView([p.lat,p.lng],10,{animate:true}); if(p._marker) p._marker.openPopup(); }
+      openModal(p.id);
+    });
+    list.appendChild(div);
+  });
+}
+function filterProjects(val){ currentSearch=val; renderProjects(); }
+function filterByStatus(s){ currentFilter=s; renderProjects(); }
+
+// ══════════════════════════════════════════════════════════════════════════
+// RENDER TENDERS
+// ══════════════════════════════════════════════════════════════════════════
+function renderTenders(){
+  const list = document.getElementById('tender-list');
+  list.innerHTML='';
+  TENDERS.forEach(td=>{
+    const div = document.createElement('div');
+    div.className='tender-item';
+    div.innerHTML=`
+      <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start">
+        <div class="tender-name">${td.name}</div>
+        <span class="badge badge-blue" style="white-space:nowrap;flex-shrink:0">مطروح</span>
+      </div>
+      <div class="tender-date" style="margin-top:5px;display:flex;gap:12px;flex-wrap:wrap">
+        <span><i class="fa fa-calendar"></i> ${td.date}</span>
+        <span><i class="fa fa-coins" style="color:var(--green)"></i> <strong style="color:var(--green)">${Number(td.budget).toLocaleString()} د.ل</strong></span>
+        <span><i class="fa fa-map-marker-alt"></i> ${td.location.split('—')[0].trim()}</span>
+      </div>
+      <button class="tender-detail-btn" onclick="openTenderModal(${td.id})">
+        <i class="fa fa-info-circle"></i> تفاصيل إضافية
+      </button>`;
+    list.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TENDER DETAIL MODAL
+// ══════════════════════════════════════════════════════════════════════════
+function openTenderModal(id){
+  const td = TENDERS.find(x=>x.id===id);
+  if(!td) return;
+  document.getElementById('tender-modal-title').textContent = td.name;
+  document.getElementById('tender-modal-body').innerHTML = `
+    <!-- Value highlight -->
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px"><i class="fa fa-coins"></i> قيمة العطاء</div>
+      <div class="tender-value-badge">${Number(td.budget).toLocaleString()} دينار ليبي</div>
+    </div>
+    <!-- Details grid -->
+    <div class="info-row"><span class="lbl"><i class="fa fa-map-marker-alt"></i> الموقع</span><span class="val">${td.location}</span></div>
+    <div class="info-row"><span class="lbl"><i class="fa fa-calendar"></i> تاريخ الطرح</span><span class="val">${td.date}</span></div>
+    <div class="info-row"><span class="lbl"><i class="fa fa-calendar-check"></i> آخر موعد للتقديم</span><span class="val" style="color:var(--red);font-weight:700">${td.deadline}</span></div>
+    <div class="info-row"><span class="lbl"><i class="fa fa-gavel"></i> اللجنة المختصة</span><span class="val">${td.committee}</span></div>
+    <!-- Brief -->
+    <div style="margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px;border-right:3px solid var(--accent);padding-right:7px"><i class="fa fa-file-alt"></i> نبذة عن المشروع</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.8;background:var(--bg);padding:10px;border-radius:7px;border:1px solid var(--border)">${td.brief}</div>
+    </div>
+    <!-- Requirements -->
+    <div style="margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px;border-right:3px solid var(--green);padding-right:7px"><i class="fa fa-check-circle"></i> شروط ومتطلبات التأهل</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.8;background:#f0fdf4;padding:10px;border-radius:7px;border:1px solid #c8e6c9">${td.requirements}</div>
+    </div>
+    <!-- Contact -->
+    <div style="margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px;border-right:3px solid var(--accent2);padding-right:7px"><i class="fa fa-envelope"></i> تواصل معنا للاستفسار</div>
+      <div class="contact-box">
+        <div style="font-size:12px;margin-bottom:5px"><i class="fa fa-user" style="color:var(--accent);width:18px"></i> ${td.contact.name}</div>
+        <div style="font-size:12px;margin-bottom:5px"><i class="fa fa-envelope" style="color:var(--accent);width:18px"></i> <a href="mailto:${td.contact.email}">${td.contact.email}</a></div>
+        <div style="font-size:12px;margin-bottom:5px"><i class="fa fa-phone" style="color:var(--accent);width:18px"></i> <a href="tel:${td.contact.phone}">${td.contact.phone}</a></div>
+        <div style="font-size:12px"><i class="fa fa-map-marker-alt" style="color:var(--accent);width:18px"></i> ${td.contact.address}</div>
+      </div>
+      <!-- Quick inquiry form -->
+      <div style="margin-top:10px;background:#fff3e0;border-radius:8px;padding:12px;border:1px solid #ffe082">
+        <div style="font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:8px"><i class="fa fa-paper-plane"></i> إرسال استفسار سريع</div>
+        <input type="text" placeholder="اسمك / شركتك" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:'Cairo',sans-serif;font-size:12px;margin-bottom:6px;direction:rtl;outline:none">
+        <input type="email" placeholder="البريد الإلكتروني" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:'Cairo',sans-serif;font-size:12px;margin-bottom:6px;outline:none">
+        <textarea placeholder="سؤالك أو استفسارك..." rows="3" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:'Cairo',sans-serif;font-size:12px;resize:none;direction:rtl;outline:none"></textarea>
+        <button onclick="sendInquiry(this)" style="margin-top:6px;background:var(--accent2);color:#fff;border:none;border-radius:6px;padding:8px 20px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;width:100%"><i class="fa fa-paper-plane"></i> إرسال الاستفسار</button>
+      </div>
+    </div>`;
+  document.getElementById('tender-modal').classList.add('open');
+}
+
+function closeTenderModal(){ document.getElementById('tender-modal').classList.remove('open'); }
+
+function sendInquiry(btn){
+  btn.textContent = '✓ تم إرسال استفسارك بنجاح';
+  btn.style.background = 'var(--green)';
+  btn.disabled = true;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PROJECT DETAIL MODAL
+// ══════════════════════════════════════════════════════════════════════════
+function openModal(id){
+  const p = PROJECTS.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('modal-title').textContent = p.name;
+  // Info tab
+  const statusColors = {completed:'var(--green)',ongoing:'var(--yellow)',planned:'var(--muted)'};
+  document.getElementById('ppanel-info').innerHTML=`
+    <div class="info-row"><span class="lbl">${t('lbl_city')}</span><span class="val">${p.city}</span></div>
+    <div class="info-row"><span class="lbl">${t('lbl_type')}</span><span class="val">${t('type_ar_'+p.type)}</span></div>
+    <div class="info-row"><span class="lbl">${t('lbl_status')}</span><span class="val" style="color:${statusColors[p.status]}">${t('status_'+p.status)}</span></div>
+    <div class="info-row"><span class="lbl">${t('lbl_budget')}</span><span class="val">${p.budget}</span></div>
+    <div class="info-row"><span class="lbl">${t('lbl_progress')}</span><span class="val">
+      <div style="display:inline-flex;align-items:center;gap:8px">
+        <div style="width:120px;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden"><div style="width:${p.progress}%;height:100%;background:${TYPE_COLORS[p.type]};border-radius:4px"></div></div>
+        <strong>${p.progress}%</strong>
+      </div></span></div>
+    <div class="info-row"><span class="lbl">${t('lbl_start')}</span><span class="val">${p.start}</span></div>
+    <div class="info-row"><span class="lbl">${t('lbl_end')}</span><span class="val">${p.end}</span></div>
+    <div class="info-row"><span class="lbl">${t('lbl_contractor')}</span><span class="val">${p.contractor}</span></div>
+    <div class="info-row"><span class="lbl">الإحداثيات</span><span class="val">${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span></div>`;
+  // Media tab
+  let mediaHTML = '';
+  if(p.images && p.images.length){
+    mediaHTML += `<div class="media-grid">`;
+    p.images.forEach(img=>{ mediaHTML+=`<img class="media-img" src="${img}" alt="صورة المشروع" onerror="this.style.display='none'">`; });
+    mediaHTML += `</div>`;
+  } else {
+    mediaHTML += `<div style="text-align:center;padding:20px;color:var(--muted)"><i class="fa fa-image" style="font-size:32px;margin-bottom:8px;display:block"></i><div style="font-size:12px">لا توجد صور متاحة حالياً</div></div>`;
+  }
+  if(p.video){
+    mediaHTML += `<div style="margin-top:12px"><div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px"><i class="fa fa-video"></i> فيديو المشروع</div><iframe class="video-embed" height="200" src="${p.video}" allowfullscreen></iframe></div>`;
+  } else {
+    mediaHTML += `<div style="text-align:center;padding:12px;color:var(--muted)"><i class="fa fa-video" style="font-size:24px;margin-bottom:4px;display:block"></i><div style="font-size:11px">لا يوجد فيديو</div></div>`;
+  }
+  // CAD / Engineering files
+  if(p.files && p.files.length){
+    mediaHTML += `<div style="margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;border-right:3px solid var(--accent2);padding-right:7px">
+        <i class="fa fa-drafting-compass"></i> المخططات الهندسية (AutoCAD)
+      </div>`;
+    p.files.forEach(f=>{
+      const icon = f.type==='dwg' ? 'fa-file-code' : 'fa-file';
+      mediaHTML += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:7px;border:1px solid var(--border);margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <i class="fa ${icon}" style="color:var(--accent2);font-size:18px"></i>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${f.name}</div>
+            <div style="font-size:10px;color:var(--muted)">${f.type.toUpperCase()} &nbsp;•&nbsp; ${f.size}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="background:#fff3e0;color:var(--accent2);border-radius:5px;padding:3px 9px;font-size:10px;font-weight:700">DWG</span>
+          <button onclick="alert('يتطلب ArcGIS Online لعرض هذا الملف')"
+            style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;font-size:10px;font-family:Cairo,sans-serif">
+            <i class="fa fa-eye"></i> عرض
+          </button>
+        </div>
+      </div>`;
+    });
+    mediaHTML += `</div>`;
+  }
+  // Description
+  if(p.description){
+    mediaHTML += `<div style="margin-top:12px;background:var(--bg);border-radius:8px;padding:12px;border:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px"><i class="fa fa-info-circle"></i> وصف المشروع</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.9">${p.description}</div>
+    </div>`;
+  }
+  document.getElementById('ppanel-media').innerHTML = mediaHTML;
+  // Timeline tab
+  let tlHTML = `<div class="timeline">`;
+  (p.timeline||[]).forEach((item,i)=>{
+    const cls = item.done ? 'done' : (i===p.timeline.findIndex(x=>!x.done) ? 'active' : 'future');
+    tlHTML += `<div class="tl-item ${cls}"><div class="tl-dot"></div><div class="tl-date">${item.date}</div><div class="tl-title">${item.title}</div>${item.desc?`<div class="tl-desc">${item.desc}</div>`:''}</div>`;
+  });
+  tlHTML += `</div>`;
+  if(!p.timeline||!p.timeline.length) tlHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">لا توجد خطة زمنية محددة</div>`;
+  document.getElementById('ppanel-timeline').innerHTML = tlHTML;
+  // Show
+  showPopupTab('info');
+  document.getElementById('project-modal').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('project-modal').classList.remove('open'); }
+
+function showPopupTab(name){
+  document.querySelectorAll('.popup-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.popup-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('ptab-'+name).classList.add('active');
+  document.getElementById('ppanel-'+name).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TABS & NAV
+// ══════════════════════════════════════════════════════════════════════════
+function showTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  // Sync header nav button
+  const navMap = {dashboard:'btn-dashboard', projects:'btn-projects', tenders:'btn-tenders', layers:'btn-layers'};
+  if(navMap[name]) setMainNav(document.getElementById(navMap[name]));
+}
+// Unified nav highlight — always clears all, sets only clicked
+function setMainNav(btn){
+  document.querySelectorAll('.hdr-nav .nav-btn').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+// Keep backward compat
+function setActiveNav(el){ setMainNav(el); }
+
+// ══════════════════════════════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════════════════════════════
+function exportData(){
+  const rows=[['#',t('lbl_city'),t('lbl_type'),t('lbl_status'),t('lbl_budget'),t('lbl_progress'),t('lbl_start'),t('lbl_end')]];
+  PROJECTS.forEach((p,i)=>rows.push([i+1,p.city,p.type,p.status,p.budget,p.progress+'%',p.start,p.end]));
+  const csv = '﻿'+rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='hib_projects.csv'; a.click();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// KPI PERFORMANCE DASHBOARD
+// ══════════════════════════════════════════════════════════════════════════
+let kpiOpen = false;
+let kpiChartsBuilt = false;
+
+function toggleKpiDashboard(btn){
+  kpiOpen = !kpiOpen;
+  const dash    = document.getElementById('kpi-dashboard');
+  const mapEl   = document.getElementById('map');
+  const cesEl   = document.getElementById('cesium-container');
+  const wbEl    = document.getElementById('wayback-app-container');
+  const tb      = document.querySelector('.map-toolbar');
+  const ntb     = document.getElementById('nav-toolbar');
+  const sidebar = document.querySelector('.sidebar');
+
+  if(kpiOpen){
+    dash.classList.add('open');
+    mapEl.style.display   = 'none';
+    cesEl.style.display   = 'none';
+    wbEl.style.display    = 'none';
+    if(tb)  tb.style.display  = 'none';
+    if(ntb) ntb.style.display = 'none';
+    sidebar.style.display = 'none';
+    if(!kpiChartsBuilt){ buildKpiDashboard(); kpiChartsBuilt = true; }
+  } else {
+    dash.classList.remove('open');
+    mapEl.style.display   = 'block';
+    if(tb)  tb.style.display  = 'flex';
+    if(ntb) ntb.style.display = 'flex';
+    sidebar.style.display = 'flex';
+    setMainNav(document.getElementById('btn-dashboard'));
+    if(is3D){ mapEl.style.display='none'; cesEl.style.display='flex'; }
+  }
+}
+
+function buildKpiDashboard(){
+  const total     = PROJECTS.length;
+  const completed = PROJECTS.filter(p=>p.status==='completed').length;
+  const ongoing   = PROJECTS.filter(p=>p.status==='ongoing').length;
+  const planned   = PROJECTS.filter(p=>p.status==='planned').length;
+  const compRate  = Math.round(completed/total*100);
+  const avgProg   = Math.round(PROJECTS.reduce((s,p)=>s+p.progress,0)/total);
+
+  // Total budget (from project budgets)
+  let totalBudget = 0;
+  PROJECTS.forEach(p=>{ const m=p.budget.match(/([\d.]+)/); if(m) totalBudget+=parseFloat(m[1]); });
+  TENDERS.forEach(t=>{ totalBudget += parseFloat(t.budget.replace(/,/g,''))/1000000; });
+
+  // By type
+  const typeKeys  = ['roads','housing','water','bridges','utilities'];
+  const typeNames = ['طرق','إسكان','مياه','جسور','مرافق'];
+  const typeCounts = typeKeys.map(k=>PROJECTS.filter(p=>p.type===k).length);
+  const typeColors = typeKeys.map(k=>TYPE_COLORS[k]);
+
+  // By city (top 8)
+  const cityMap = {};
+  PROJECTS.forEach(p=>{ cityMap[p.city]=(cityMap[p.city]||0)+1; });
+  const cities = Object.entries(cityMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  // Completion by type
+  const typeCompletion = typeKeys.map(k=>{
+    const group = PROJECTS.filter(p=>p.type===k);
+    return group.length ? Math.round(group.reduce((s,p)=>s+p.progress,0)/group.length) : 0;
+  });
+
+  // Budget by type (sum م.د)
+  const typeBudgets = typeKeys.map(k=>{
+    return PROJECTS.filter(p=>p.type===k).reduce((s,p)=>{
+      const m=p.budget.match(/([\d.]+)/); return s+(m?parseFloat(m[1]):0);
+    },0);
+  });
+
+  const body = document.getElementById('kpi-body');
+  body.innerHTML = `
+    <!-- ── KPI SUMMARY CARDS ── -->
+    <div class="kpi-cards">
+      <div class="kpi-card" style="border-top-color:var(--accent)">
+        <div class="kpi-val" style="color:var(--accent)">${total}</div>
+        <div class="kpi-lbl">إجمالي المشروعات</div>
+        <div class="kpi-sub">Total Projects</div>
+      </div>
+      <div class="kpi-card" style="border-top-color:var(--green)">
+        <div class="kpi-val" style="color:var(--green)">${compRate}%</div>
+        <div class="kpi-lbl">معدل الإنجاز الكلي</div>
+        <div class="kpi-sub">Overall Completion Rate</div>
+      </div>
+      <div class="kpi-card" style="border-top-color:var(--yellow)">
+        <div class="kpi-val" style="color:var(--yellow)">${ongoing}</div>
+        <div class="kpi-lbl">مشاريع جاري تنفيذها</div>
+        <div class="kpi-sub">Projects In Progress</div>
+      </div>
+      <div class="kpi-card" style="border-top-color:var(--primary)">
+        <div class="kpi-val" style="color:var(--primary)">${totalBudget.toFixed(0)}</div>
+        <div class="kpi-lbl">إجمالي الميزانية (م.د)</div>
+        <div class="kpi-sub">Total Budget (M LYD)</div>
+      </div>
+      <div class="kpi-card" style="border-top-color:var(--accent2)">
+        <div class="kpi-val" style="color:var(--accent2)">${avgProg}%</div>
+        <div class="kpi-lbl">متوسط نسبة الإنجاز</div>
+        <div class="kpi-sub">Average Progress</div>
+      </div>
+      <div class="kpi-card" style="border-top-color:var(--red)">
+        <div class="kpi-val" style="color:var(--red)">${planned}</div>
+        <div class="kpi-lbl">مشاريع مخططة</div>
+        <div class="kpi-sub">Planned Projects</div>
+      </div>
+      <div class="kpi-card" style="border-top-color:var(--purple)">
+        <div class="kpi-val" style="color:var(--purple)">${TENDERS.length}</div>
+        <div class="kpi-lbl">عطاءات نشطة</div>
+        <div class="kpi-sub">Active Tenders</div>
+      </div>
+      <div class="kpi-card" style="border-top-color:#009688">
+        <div class="kpi-val" style="color:#009688">${completed}</div>
+        <div class="kpi-lbl">مشاريع مكتملة</div>
+        <div class="kpi-sub">Completed Projects</div>
+      </div>
+    </div>
+
+    <!-- ── 3 CHARTS IN ONE ROW ── -->
+    <div class="kpi-charts" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi-chart-box">
+        <div class="kpi-chart-title"><i class="fa fa-map-marker-alt"></i> توزيع المشاريع حسب المدينة</div>
+        <canvas id="chart-cities" height="200"></canvas>
+      </div>
+      <div class="kpi-chart-box">
+        <div class="kpi-chart-title orange"><i class="fa fa-tasks"></i> نسبة الإنجاز حسب نوع المشروع</div>
+        <canvas id="chart-completion" height="200"></canvas>
+      </div>
+      <div class="kpi-chart-box">
+        <div class="kpi-chart-title purple"><i class="fa fa-coins"></i> الميزانية حسب نوع المشروع (م.د)</div>
+        <canvas id="chart-budget" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- ── STATUS DONUT + TOP PROJECTS TABLE ── -->
+    <div class="kpi-charts two-col">
+      <div class="kpi-chart-box" style="width:260px">
+        <div class="kpi-chart-title"><i class="fa fa-circle-notch"></i> توزيع الحالات</div>
+        <canvas id="chart-status" height="200"></canvas>
+        <div style="display:flex;justify-content:center;gap:14px;margin-top:8px;font-size:11px;flex-wrap:wrap">
+          <span><span style="color:var(--green)">●</span> مكتمل ${completed}</span>
+          <span><span style="color:var(--yellow)">●</span> جاري ${ongoing}</span>
+          <span><span style="color:#90a4ae">●</span> مخطط ${planned}</span>
+        </div>
+      </div>
+      <div class="kpi-chart-box" style="flex:1;overflow:auto">
+        <div class="kpi-chart-title"><i class="fa fa-list-ol"></i> أعلى المشاريع ميزانيةً</div>
+        <table class="kpi-table">
+          <thead><tr>
+            <th>#</th><th>المشروع</th><th>المدينة</th><th>الميزانية</th><th>الإنجاز</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="kpi-top-projects"></tbody>
+        </table>
+      </div>
+    </div>
+
+  `;
+
+  // ── Top projects table ──
+  const top = [...PROJECTS].sort((a,b)=>{
+    const av=parseFloat((a.budget.match(/([\d.]+)/)||[0,0])[1]);
+    const bv=parseFloat((b.budget.match(/([\d.]+)/)||[0,0])[1]);
+    return bv-av;
+  }).slice(0,8);
+  const tbody = document.getElementById('kpi-top-projects');
+  top.forEach((p,i)=>{
+    const sColor = p.status==='completed'?'var(--green)':p.status==='ongoing'?'var(--yellow)':'#90a4ae';
+    tbody.innerHTML += `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="font-weight:600;max-width:180px">${p.name}</td>
+      <td>${p.city}</td>
+      <td style="font-weight:700;color:var(--primary)">${p.budget}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="kpi-prog-bar"><div class="kpi-prog-fill" style="width:${p.progress}%;background:${TYPE_COLORS[p.type]}"></div></div>
+          <span style="color:${sColor};font-weight:700;font-size:11px">${p.progress}%</span>
+        </div>
+      </td>
+      <td style="white-space:nowrap">
+        <button onclick="kpiGoToMap(${p.id})"
+          style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:10px;font-family:'Cairo',sans-serif;margin-left:4px"
+          title="عرض على الخريطة">
+          <i class="fa fa-map-marker-alt"></i> الخريطة
+        </button>
+        <button onclick="kpiShowAttachments(${p.id})"
+          style="background:var(--accent2);color:#fff;border:none;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:10px;font-family:'Cairo',sans-serif"
+          title="المرفقات">
+          <i class="fa fa-paperclip"></i> المرفقات
+        </button>
+      </td>
+    </tr>`;
+  });
+
+
+  // ── Build charts ──
+  const chartDefaults = { plugins:{ legend:{ labels:{ font:{family:'Cairo'}, color:'#1a1a2e' } } } };
+
+  // Cities bar chart
+  new Chart(document.getElementById('chart-cities'),{
+    type:'bar',
+    data:{ labels:cities.map(c=>c[0]), datasets:[{
+      label:'عدد المشاريع', data:cities.map(c=>c[1]),
+      backgroundColor:['#1e88e5','#2e7d32','#e65100','#f57f17','#6a1b9a','#0277bd','#c62828','#00796b'],
+      borderRadius:5, borderSkipped:false
+    }]},
+    options:{ responsive:true, plugins:{...chartDefaults.plugins, legend:{display:false}},
+      scales:{ x:{ticks:{font:{family:'Cairo'},color:'#5a6a7a'}}, y:{ticks:{font:{family:'Cairo'},color:'#5a6a7a'}, grid:{color:'#e8eef4'}} } }
+  });
+
+  // Completion by type horizontal bar
+  new Chart(document.getElementById('chart-completion'),{
+    type:'bar',
+    data:{ labels:typeNames, datasets:[{
+      label:'نسبة الإنجاز %', data:typeCompletion,
+      backgroundColor:typeColors, borderRadius:5, borderSkipped:false
+    }]},
+    options:{ indexAxis:'y', responsive:true,
+      plugins:{...chartDefaults.plugins, legend:{display:false}},
+      scales:{
+        x:{min:0,max:100, ticks:{callback:v=>v+'%', font:{family:'Cairo'},color:'#5a6a7a'}, grid:{color:'#e8eef4'}},
+        y:{ticks:{font:{family:'Cairo'},color:'#5a6a7a'}}
+      }
+    }
+  });
+
+  // Budget by type bar
+  new Chart(document.getElementById('chart-budget'),{
+    type:'bar',
+    data:{ labels:typeNames, datasets:[{
+      label:'الميزانية (م.د)', data:typeBudgets.map(v=>+v.toFixed(1)),
+      backgroundColor:typeColors, borderRadius:5, borderSkipped:false
+    }]},
+    options:{ responsive:true,
+      plugins:{...chartDefaults.plugins, legend:{display:false}},
+      scales:{ x:{ticks:{font:{family:'Cairo'},color:'#5a6a7a'}}, y:{ticks:{font:{family:'Cairo'},color:'#5a6a7a'},grid:{color:'#e8eef4'}} }
+    }
+  });
+
+  // Status doughnut
+  new Chart(document.getElementById('chart-status'),{
+    type:'doughnut',
+    data:{ labels:['مكتمل','جاري','مخطط'],
+      datasets:[{ data:[completed,ongoing,planned],
+        backgroundColor:['#2e7d32','#f57f17','#90a4ae'], borderWidth:2, borderColor:'#fff' }]},
+    options:{ responsive:true, cutout:'65%', plugins:{ legend:{display:false} } }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════════
+// Compute total budget from projects (parse "X.X م.د" → millions)
+(function computeTotalBudget(){
+  let total = 0;
+  PROJECTS.forEach(p=>{
+    const match = p.budget.match(/([\d.]+)/);
+    if(match) total += parseFloat(match[1]);
+  });
+  // Add tenders
+  TENDERS.forEach(td=>{
+    total += parseFloat(td.budget.replace(/,/g,'')) / 1000000;
+  });
+  const display = document.getElementById('total-budget-display');
+  if(display) display.textContent = total.toFixed(1) + ' مليون دينار';
+})();
+
+renderProjects();
+renderTenders();
+
+// Open KPI dashboard by default
+setTimeout(()=>{
+  const btn = document.getElementById('btn-kpi');
+  toggleKpiDashboard(btn);
+}, 200);
+</script>
+</body>
+</html>
